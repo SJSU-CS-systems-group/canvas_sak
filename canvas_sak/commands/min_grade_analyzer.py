@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument("course")
 @click.option('-m', 'min_grade', default=50.0, show_default=True, help="""
               the minimum assignment grade. any score below this grade will be set to

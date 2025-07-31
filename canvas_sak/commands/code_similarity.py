@@ -1,7 +1,7 @@
-from core import *
+from canvas_sak.core import *
 import glob
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument('course_name', metavar='course')
 @click.argument('assignment_name', metavar='assignment', default='')
 @click.argument('language', metavar='language')
@@ -28,7 +28,7 @@ def code_similarity(course_name, language, assignment_name, dryrun, pause, multi
     moss_userid = parser['MOSS']['userid']
 
     moss = mosspy.Moss(moss_userid, language)
-    with tempfile.TemporaryDirectory("canvas_tool.attach") as tempdir:
+    with tempfile.TemporaryDirectory("canvas_sak.attach") as tempdir:
         for course in courses:
             assignment = get_assignment(course, assignment_name)
             usermap = {u.id: u.name for u in course.get_users()}

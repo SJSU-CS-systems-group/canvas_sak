@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument("course")
 @click.argument("csv_output_file", type=click.File("w"))
 def export_letter_grade(course, csv_output_file):

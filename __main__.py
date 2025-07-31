@@ -3,4 +3,4 @@ from commands import *
 
 
 if __name__ == "__main__":
-    core.canvas_tool()
+    core.canvas_sak()

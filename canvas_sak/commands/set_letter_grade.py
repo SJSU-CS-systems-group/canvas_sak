@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument("course")
 @click.option("--round", default=0.0, help="points to add to the final score before calculating the letter grade.")
 @click.option("--dryrun/--no-dryrun", default=True)

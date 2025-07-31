@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument('course_name', metavar='course')
 @click.argument('assignment_name', metavar='assignment', default='')
 @click.option('--dryrun/--no-dryrun', default=True, show_default=True,

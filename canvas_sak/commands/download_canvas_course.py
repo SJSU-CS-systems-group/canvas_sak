@@ -1,6 +1,6 @@
-from commands.upload_canvas_course import page_name_to_url
-from core import *
-from md2fhtml import *
+from canvas_sak.commands.upload_canvas_course import page_name_to_url
+from canvas_sak.core import *
+from canvas_sak.md2fhtml import *
 
 
 def download_modules(course, target, dryrun):
@@ -59,9 +59,13 @@ def download_modules(course, target, dryrun):
     if dryrun:
         info(f"would have written:\n{output}to {target}")
     else:
-        with open(target, "w") as fd:
+        with open(ensure_dirs(target), "w") as fd:
             fd.write(output)
 
+
+def ensure_dirs(target):
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    return target
 
 def download_discussions(course, target, dryrun):
     os.makedirs(target, exist_ok=True)
@@ -75,7 +79,7 @@ def download_discussions(course, target, dryrun):
                 info(f"would download {target_file} for {discussion.title}")
             else:
                 info(f"downloading {target_file} for {discussion.title}")
-                with open(target_file, "w+") as fd:
+                with open(ensure_dirs(target_file), "w+") as fd:
                     fd.write(f"# {discussion.title}\n")
                     # todo: we need to fix up the links based on the rr maps
                     fd.write(html2mdstr(discussion.message))
@@ -99,7 +103,7 @@ def download_pages(course, target, dryrun):
         if dryrun:
             info(f"would download {page.title} to {url}")
         else:
-            with open(os.path.join(target, url) + ".md", "w+") as fd:
+            with open(ensure_dirs(os.path.join(target, url) + ".md"), "w+") as fd:
                 fd.write(f"published: {page.published}\n")
                 if page.publish_at:
                     fd.write(f"publish_at: {page.publish_at}\n")
@@ -153,7 +157,7 @@ def download_announcements(course, target, dryrun):
     pass
 
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument('course_name', metavar='course')
 @click.option('--dryrun/--no-dryrun', default=True, show_default=True, help="show what would happen, but don't do it.")
 @click.option('--modules/--no-modules', default=False, show_default=True,

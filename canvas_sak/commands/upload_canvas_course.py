@@ -1,7 +1,8 @@
 from canvasapi.page import Page
 
-from core import *
-from md2fhtml import md2htmlstr
+import canvas_sak.core
+from canvas_sak.core import *
+from canvas_sak.md2fhtml import md2htmlstr
 
 
 def boolean_option(key, params):
@@ -47,6 +48,9 @@ def create_stub(course, item_type, item_name):
 
 
 def create_page(course, title, body=None):
+    rrname = "Page" + title
+    if rrname in rr4name:
+        return rr4name[rrname]
     page_dict = {"title": title}
     if body:
         page_dict["body"] = body
@@ -95,7 +99,7 @@ def upload_modules(course, source, dryrun):
                     info(f"creating {item_title} in {title}")
                     item_dict = {"title": item_title, "indent": indent_level - 1, "type": item_type}
                     if "newtab" in item_options:
-                        item_dict["newtab"] = boolean_option("newtab", item_options)
+                        item_dict["new_tab"] = boolean_option("newtab", item_options)
                     item_name = item_options["target"] if "target" in item_options else item_title
                     if item_type in ["Assignment", "Discussion", "File", "Quiz"]:
                         item_name = item_options["target"] if "target" in item_options else item_title
@@ -105,8 +109,8 @@ def upload_modules(course, source, dryrun):
                                                                                                                item_type,
                                                                                                                item_name).id
                     elif item_type == "Page":
-                        url = page_name_to_url(item_name)
-                        create_page(course, item_name)
+                        item_page = create_page(course, item_name)
+                        url = item_page.url
                         item_dict["page_url"] = url
                     elif item_type.startswith("External"):
                         item_dict["external_url"] = item_options["url"]
@@ -251,7 +255,7 @@ def upload_announcements(course, target, dryrun):
     pass
 
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument('course_name', metavar='course')
 @click.option('--dryrun/--no-dryrun', default=True, show_default=True, help="show what would happen, but don't do it.")
 @click.option('--modules/--no-modules', default=False, show_default=True,

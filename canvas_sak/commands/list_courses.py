@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.option('--active/--inactive', default=True, help="show only active courses")
 @click.option('--matcher', default=course_name_matcher, show_default=True, metavar="match_re_expression",
               help="course name regular expressions matcher")

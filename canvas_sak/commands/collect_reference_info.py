@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument("course")
 @click.option('-t', 'thresholds', metavar='threshold', multiple=True, default=[84, 90, 95], show_default=True,
               type=click.INT, help="""

@@ -41,7 +41,7 @@ def introspect(o):
 
 
 # this file has the url and token we will use
-config_ini = click.get_app_dir("canvas_tool.ini")
+config_ini = click.get_app_dir("canvas_sak.ini")
 
 
 def error(message):
@@ -103,7 +103,7 @@ def get_canvas_object():
 @click.group()
 @click.option("--log-level", type=click.Choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'], case_sensitive=False),
               help="set python logging level")
-def canvas_tool(log_level):
+def canvas_sak(log_level):
     if log_level:
         log_level_int = getattr(logging, log_level.upper())
         logging.basicConfig(level=log_level_int)

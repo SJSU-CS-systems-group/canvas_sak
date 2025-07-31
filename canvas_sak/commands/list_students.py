@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument('course')
 @click.option('--active/--inactive', default=True, help="show only active courses")
 @click.option('--emails/--no_emails', help="list student emails")

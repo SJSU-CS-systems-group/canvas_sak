@@ -6,7 +6,7 @@
 # ./moss_zip.sh moss.stanford.edu/results/7/35796342564 3 8 9 10
 #
 # will zipp the 3, 8, 9, and 10 matches from the results downloaded to moss.stanford.edu/results/7/35796342564
-# that directory structure is what you get when you do the wget that is suggested by canvas_tool for pulling
+# that directory structure is what you get when you do the wget that is suggested by canvas_sak for pulling
 # the moss results.
 #
 

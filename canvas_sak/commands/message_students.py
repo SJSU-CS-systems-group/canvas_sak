@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument('course')
 @click.argument('subject')
 @click.option('--course-in-subject/--no-course-in-subject', show_default=True, default=True,

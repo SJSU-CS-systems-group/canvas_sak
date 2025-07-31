@@ -1,6 +1,6 @@
-from core import *
+from canvas_sak.core import *
 
-@canvas_tool.command()
+@canvas_sak.command()
 def help_me_setup():
     """provide guidance through the setup process"""
     if os.path.isfile(config_ini):

@@ -1,6 +1,6 @@
 import click
 
-from core import *
+from canvas_sak.core import *
 
 # from https://stackoverflow.com/a/925630
 from io import StringIO
@@ -54,7 +54,7 @@ def get_question_group(quiz, question_groups, group_id):
     return question_groups[group_id]
 
 
-@canvas_tool.command()
+@canvas_sak.command()
 @click.argument('course_name', metavar='course')
 @click.argument('quiz_name', metavar='quiz', default='')
 @click.option('--show-question/--no-show-question', default=False, show_default=True)
