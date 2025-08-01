@@ -1,12 +1,15 @@
-# canvas_tool
+# canvas_sak - canvas Swiss-Army-Knife
 a command-line python based tool for teachers who use canvas. 
 
-you can download from canvas_tool.pyz from [latest release](https://github.com/SJSU-CS-systems-group/canvas_tool/releases).
+you can download from Pypi.
+just `pip install canvas-sak`.
 
-run it with `python3 canvas_tool.pyz` or `python canvas_tool.pyz`.
+you will need to grab a "token" from your canvas account. go to the canvas webpage -> click on Account in the upper left -> click Settings -> scroll down and click the New Access Token button. you will need to put the token in a configuration file. `canvas-sak help-me-setup` will tell you how and where to create that configuration file.
 
-you will need to grab a "token" from your canvas account. go to the canvas webpage -> click on Account in the upper left -> click Settings -> scroll down and click the New Access Token button. you will need to put the token in a configuration file. `python3 canvas_tool.pyz help-me-setup` will tell you how and where to create that configuration file.
+some of the major functions:
 
-at this point the main thing this tool does is grade discussion assignments for participation: 1 point for posting and 1 point for replying.
-
-it also will collect names and categories of assignments that past students excelled at for writing future letters of recommendation.
+* code-similarity: download program submissions and run them through stanford MOSS.
+* collect-reference-info: collect high level information about student for when they later ask for letters of recommendation.
+* download-submissions: the the submissions of an assignment.
+* download/upload-course-content: download and upload course content as markdown files for easily reusing past courses in a way that is easy to change.
+* message-students: send a canvas messages to students from the commandline
