@@ -1,4 +1,5 @@
 __all__ = [
+    "archive_inbox",
     "code_similarity",
     "collect_reference_info",
     "download_canvas_course",
