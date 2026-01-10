@@ -15,5 +15,6 @@ __all__ = [
     "set_letter_grade",
     "upload_assignment_grades",
     "upload_canvas_course",
+    "upload_qti_quiz",
     "quiz",
 ]
