@@ -8,6 +8,7 @@ __all__ = [
     "grade_discussion",
     "help_me_setup",
     "list_courses",
+    "list_due_dates",
     "list_students",
     "message_students",
     "min_grade_analyzer",
