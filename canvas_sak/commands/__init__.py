@@ -13,6 +13,7 @@ __all__ = [
     "min_grade_analyzer",
     "set_fudge_points",
     "set_letter_grade",
+    "upload_assignment_grades",
     "upload_canvas_course",
     "quiz",
 ]
