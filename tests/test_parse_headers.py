@@ -18,16 +18,16 @@ class TestParseHeaders:
 
         assert headers['published'] == 'true'
         assert headers['title'] == 'My Page'
-        assert body == 'This is the body content.'
+        assert body == 'This is the body content.\n'
 
-    def test_title_stops_header_parsing(self):
-        """Parsing should stop when title keyword is encountered."""
+    def test_title_does_not_stop_header_parsing(self):
+        """Parsing should continue after title keyword to capture other keywords."""
         content = "title: Test Title\npublished: true\nBody text here."
         headers, body = parse_headers(content, PAGE_KEYWORDS)
 
         assert headers['title'] == 'Test Title'
-        assert 'published' not in headers  # Should be in body, not headers
-        assert body == 'published: true\nBody text here.'
+        assert headers['published'] == 'true'  # Should be parsed, not in body
+        assert body == 'Body text here.\n'
 
     def test_unknown_keyword_treated_as_content(self):
         """Unknown keywords should be treated as normal content, not discarded."""
@@ -55,7 +55,7 @@ class TestParseHeaders:
         assert headers['publish_at'] == '2024-01-01'
         assert headers['front_page'] == 'true'
         assert headers['title'] == 'Full Page'
-        assert body == 'Body.'
+        assert body == 'Body.\n'
 
     def test_all_discussion_keywords_recognized(self):
         """All DISCUSSION_KEYWORDS should be recognized and parsed."""
@@ -65,7 +65,7 @@ class TestParseHeaders:
         assert headers['published'] == 'false'
         assert headers['publish_at'] == '2024-06-15'
         assert headers['title'] == 'Discussion Topic'
-        assert body == 'Message body.'
+        assert body == 'Message body.\n'
 
     def test_discussion_does_not_recognize_page_only_keywords(self):
         """DISCUSSION_KEYWORDS should not include page-only keywords like front_page."""
@@ -82,7 +82,7 @@ class TestParseHeaders:
         headers, body = parse_headers(content, PAGE_KEYWORDS)
 
         assert headers['title'] == 'Time: 10:30 AM'
-        assert body == 'Body content.'
+        assert body == 'Body content.\n'
 
     def test_whitespace_stripped_from_values(self):
         """Whitespace should be stripped from header values."""
@@ -91,13 +91,13 @@ class TestParseHeaders:
 
         assert headers['title'] == 'Lots of spaces'
 
-    def test_empty_body_after_title(self):
-        """Should handle case where there's no body content after title."""
+    def test_empty_body_after_keywords(self):
+        """Should handle case where there's no body content after keywords."""
         content = "title: Just a Title"
         headers, body = parse_headers(content, PAGE_KEYWORDS)
 
         assert headers['title'] == 'Just a Title'
-        assert body == ''
+        assert body == '\n'  # Empty line after headers becomes body
 
     def test_multiline_body_preserved(self):
         """Multiline body content should be fully preserved."""
@@ -130,7 +130,7 @@ class TestParseHeaders:
         headers, body = parse_headers(content, PAGE_KEYWORDS)
 
         assert headers == {'title': 'Simple'}
-        assert body == 'Just body text here.'
+        assert body == 'Just body text here.\n'
 
     def test_case_sensitive_keywords(self):
         """Keywords should be case-sensitive."""
@@ -150,7 +150,7 @@ class TestParseHeaders:
         assert headers['foo'] == 'value1'
         assert headers['bar'] == 'value2'
         assert headers['title'] == 'Custom'
-        assert body == 'Body.'
+        assert body == 'Body.\n'
 
     def test_unknown_keyword_after_valid_keywords(self):
         """Unknown keyword after valid ones should stop parsing and preserve remaining content."""

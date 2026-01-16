@@ -134,10 +134,11 @@ DISCUSSION_KEYWORDS = set(["title", "published", "publish_at"])
 
 
 def parse_headers(content, keywords):
-    """Parse header lines from content, stopping when title is found or unknown keyword encountered.
+    """Parse header lines from content until an unknown keyword is encountered.
 
     Returns a tuple of (headers_dict, remaining_body).
-    Unknown keywords cause the line to be treated as normal content.
+    Continues processing all recognized keywords until a line doesn't match,
+    then treats that line and everything after as normal content.
     """
     headers = {}
     page = content
@@ -146,8 +147,6 @@ def parse_headers(content, keywords):
         (key, _, value) = line.partition(':')
         if key in keywords:
             headers[key] = value.strip()
-            if key == 'title':
-                break
         else:
             # Unknown keyword - treat line as normal content
             page = line + '\n' + page
