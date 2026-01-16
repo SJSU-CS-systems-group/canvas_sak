@@ -133,22 +133,35 @@ def extract_options(options):
 DISCUSSION_KEYWORDS = set(["title", "published", "publish_at"])
 
 
+def parse_headers(content, keywords):
+    """Parse header lines from content, stopping when title is found or unknown keyword encountered.
+
+    Returns a tuple of (headers_dict, remaining_body).
+    Unknown keywords cause the line to be treated as normal content.
+    """
+    headers = {}
+    page = content
+    while True:
+        (line, _, page) = page.partition('\n')
+        (key, _, value) = line.partition(':')
+        if key in keywords:
+            headers[key] = value.strip()
+            if key == 'title':
+                break
+        else:
+            # Unknown keyword - treat line as normal content
+            page = line + '\n' + page
+            break
+    return headers, page
+
+
 def upload_discussions(course, source, dryrun, force):
     to_upload = set(
         [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs])
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
-        dict = {}
-        while True:
-            (line, _, page) = page.partition('\n')
-            (key, _, value) = line.partition(':')
-            if key not in PAGE_KEYWORDS:
-                warn(f"found unknown keyword {key} in {file}. ignoring")
-            else:
-                dict[key] = value.strip()
-            if key == 'title':
-                break
+        dict, page = parse_headers(page, DISCUSSION_KEYWORDS)
         dict['message'] = md2htmlstr(page)
         dict['discussion_type'] = 'threaded'
         rrkey = "Discussion" + dict['title']
@@ -188,16 +201,7 @@ def upload_pages(course, source, dryrun, force):
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
-        dict = {}
-        while True:
-            (line, _, page) = page.partition('\n')
-            (key, _, value) = line.partition(':')
-            if key not in PAGE_KEYWORDS:
-                warn(f"found unknown keyword {key} in {file}. ignoring")
-            else:
-                dict[key] = value.strip()
-            if key == 'title':
-                break
+        dict, page = parse_headers(page, PAGE_KEYWORDS)
         dict['body'] = md2htmlstr(page)
         rrkey = "Page" + dict['title']
         exists = rrkey in rr4name
