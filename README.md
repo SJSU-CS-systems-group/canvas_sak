@@ -13,3 +13,4 @@ some of the major functions:
 * download-submissions: the the submissions of an assignment.
 * download/upload-course-content: download and upload course content as markdown files for easily reusing past courses in a way that is easy to change.
 * message-students: send a canvas messages to students from the commandline
+* list/set-due-dates: list and set due dates for assignments all at once
