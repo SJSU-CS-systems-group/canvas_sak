@@ -1,4 +1,5 @@
 from canvas_sak.core import *
+from canvas_sak.core import filter_ignored_paths
 import glob
 
 @canvas_sak.command()
@@ -47,7 +48,10 @@ def code_similarity(course_name, language, assignment_name, dryrun, pause, multi
                         if aname.endswith(".zip"):
                             with zipfile.ZipFile(aname, "r") as zf:
                                 zf.extractall(udir)
-        files_to_upload = [x for x in glob.glob(f"{tempdir}/**/*.{language}") if '/__MACOSX/' not in x]
+        all_files = glob.glob(f"{tempdir}/**/*.{language}", recursive=True)
+        # Filter out __MACOSX directories (common in zip files) and apply ignore patterns
+        files_to_upload = [x for x in all_files if '/__MACOSX/' not in x]
+        files_to_upload = filter_ignored_paths(files_to_upload)
         info(f"uploading {files_to_upload}")
 
         if pause:

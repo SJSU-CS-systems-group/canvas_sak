@@ -1,4 +1,5 @@
 import datetime
+import fnmatch
 import functools
 import logging
 import os
@@ -42,6 +43,140 @@ def introspect(o):
 
 # this file has the url and token we will use
 config_ini = click.get_app_dir("canvas_sak.ini")
+
+# local ignore patterns file name
+IGNORE_FILE = "canvas-sak-ignore.lst"
+
+
+def load_ignore_patterns():
+    """Load ignore patterns from config file [IGNORE] section and local canvas-sak-ignore.lst file.
+
+    Returns a list of gitignore-style patterns.
+    """
+    patterns = []
+
+    # Load from config file [IGNORE] section
+    parser = ConfigParser()
+    parser.read([config_ini])
+    if "IGNORE" in parser:
+        for key, value in parser["IGNORE"].items():
+            # Each value in the section is a pattern
+            if value:
+                patterns.append(value)
+            # The key itself can also be a pattern (for key-only entries)
+            elif key:
+                patterns.append(key)
+
+    # Load from local canvas-sak-ignore.lst file
+    if os.path.exists(IGNORE_FILE):
+        with open(IGNORE_FILE, "r") as f:
+            for line in f:
+                line = line.strip()
+                # Skip empty lines and comments
+                if line and not line.startswith("#"):
+                    patterns.append(line)
+
+    return patterns
+
+
+def matches_ignore_pattern(path, patterns):
+    """Check if a path matches any of the ignore patterns.
+
+    Supports gitignore-style patterns:
+    - * matches any sequence of characters (except /)
+    - ** matches any sequence of characters including /
+    - ? matches any single character
+    - patterns ending with / only match directories
+    - patterns starting with ! negate the match
+
+    Args:
+        path: The file path to check (should use forward slashes)
+        patterns: List of gitignore-style patterns
+
+    Returns:
+        True if the path should be ignored, False otherwise.
+    """
+    # Normalize path to use forward slashes
+    path = path.replace("\\", "/")
+
+    # Track if path is ignored (can be toggled by negation patterns)
+    ignored = False
+
+    for pattern in patterns:
+        if not pattern:
+            continue
+
+        # Handle negation patterns
+        negation = pattern.startswith("!")
+        if negation:
+            pattern = pattern[1:]
+
+        # Handle directory-only patterns (ending with /)
+        dir_only = pattern.endswith("/")
+        if dir_only:
+            pattern = pattern[:-1]
+            # For dir-only patterns, we need to check if path is a directory
+            # Since we're dealing with file paths, we check if any path component matches
+            # For simplicity, we'll match if the pattern appears as a path segment
+
+        # Handle ** patterns (recursive matching)
+        if "**" in pattern:
+            # Convert ** to a regex pattern
+            regex_pattern = pattern.replace("**", ".*")
+            # Escape other special chars but not * and ?
+            regex_pattern = regex_pattern.replace(".", r"\.")
+            regex_pattern = regex_pattern.replace(".*", ".*")  # restore **
+            regex_pattern = regex_pattern.replace("*", "[^/]*")
+            regex_pattern = regex_pattern.replace("?", "[^/]")
+            regex_pattern = f"(^|/){regex_pattern}($|/)" if dir_only else f"(^|.*/)?{regex_pattern}($|/.*)?$"
+
+            if re.search(regex_pattern, path):
+                ignored = not negation
+        else:
+            # Handle patterns without **
+            # Check if pattern should match from root or anywhere
+            if "/" in pattern:
+                # Pattern with / matches from the beginning or specific path
+                if pattern.startswith("/"):
+                    # Anchored to root
+                    pattern = pattern[1:]
+                    if fnmatch.fnmatch(path, pattern):
+                        ignored = not negation
+                else:
+                    # Match anywhere in path
+                    if fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(path, f"*/{pattern}"):
+                        ignored = not negation
+            else:
+                # Pattern without / matches filename or any path component
+                filename = os.path.basename(path)
+                if fnmatch.fnmatch(filename, pattern):
+                    ignored = not negation
+                # Also check if pattern matches any path component
+                for component in path.split("/"):
+                    if fnmatch.fnmatch(component, pattern):
+                        ignored = not negation
+                        break
+
+    return ignored
+
+
+def filter_ignored_paths(paths, patterns=None):
+    """Filter a list of paths, removing those that match ignore patterns.
+
+    Args:
+        paths: Iterable of file paths to filter
+        patterns: Optional list of patterns. If None, loads patterns using load_ignore_patterns().
+
+    Returns:
+        List of paths that don't match any ignore patterns.
+    """
+    if patterns is None:
+        patterns = load_ignore_patterns()
+
+    if not patterns:
+        return list(paths)
+
+    return [p for p in paths if not matches_ignore_pattern(p, patterns)]
 
 
 def error(message):

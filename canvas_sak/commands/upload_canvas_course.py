@@ -155,8 +155,8 @@ def parse_headers(content, keywords):
 
 
 def upload_discussions(course, source, dryrun, force):
-    to_upload = set(
-        [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs])
+    all_files = [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs]
+    to_upload = set(canvas_sak.core.filter_ignored_paths(all_files))
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
@@ -195,8 +195,8 @@ PAGE_KEYWORDS = set(["title", "published", "publish_at", "front_page"])
 
 def upload_pages(course, source, dryrun, force):
     # got to watch out for windows \\ when using join!
-    to_upload = set(
-        [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs])
+    all_files = [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs]
+    to_upload = set(canvas_sak.core.filter_ignored_paths(all_files))
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
@@ -227,8 +227,8 @@ def upload_pages(course, source, dryrun, force):
 
 def upload_files(course, target, dryrun):
     # got to watch out for windows \\ when using join!
-    to_upload = set(
-        [os.path.join(d, f)[len(target) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(target) for f in fs])
+    all_files = [os.path.join(d, f)[len(target) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(target) for f in fs]
+    to_upload = set(canvas_sak.core.filter_ignored_paths(all_files))
 
     existing_files = set()
     for folder in course.get_folders():
