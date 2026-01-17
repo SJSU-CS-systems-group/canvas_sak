@@ -1,7 +1,7 @@
 from canvasapi.page import Page
 
-import canvas_sak.core
 from canvas_sak.core import *
+from canvas_sak.core import filter_ignored_paths
 from canvas_sak.md2fhtml import md2htmlstr
 
 
@@ -176,7 +176,7 @@ def parse_headers(content, keywords):
 
 def upload_discussions(course, source, dryrun, force):
     all_files = [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs]
-    to_upload = set(canvas_sak.core.filter_ignored_paths(all_files))
+    to_upload = set(filter_ignored_paths(all_files))
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
@@ -216,7 +216,7 @@ PAGE_KEYWORDS = set(["title", "published", "publish_at", "front_page"])
 def upload_pages(course, source, dryrun, force):
     # got to watch out for windows \\ when using join!
     all_files = [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs]
-    to_upload = set(canvas_sak.core.filter_ignored_paths(all_files))
+    to_upload = set(filter_ignored_paths(all_files))
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
@@ -248,7 +248,7 @@ def upload_pages(course, source, dryrun, force):
 def upload_files(course, target, dryrun):
     # got to watch out for windows \\ when using join!
     all_files = [os.path.join(d, f)[len(target) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(target) for f in fs]
-    to_upload = set(canvas_sak.core.filter_ignored_paths(all_files))
+    to_upload = set(filter_ignored_paths(all_files))
 
     existing_files = set()
     for folder in course.get_folders():

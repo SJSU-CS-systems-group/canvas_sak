@@ -121,14 +121,18 @@ def matches_ignore_pattern(path, patterns):
 
         # Handle ** patterns (recursive matching)
         if "**" in pattern:
-            # Convert ** to a regex pattern
-            regex_pattern = pattern.replace("**", ".*")
-            # Escape other special chars but not * and ?
-            regex_pattern = regex_pattern.replace(".", r"\.")
-            regex_pattern = regex_pattern.replace(".*", ".*")  # restore **
-            regex_pattern = regex_pattern.replace("*", "[^/]*")
-            regex_pattern = regex_pattern.replace("?", "[^/]")
-            regex_pattern = f"(^|/){regex_pattern}($|/)" if dir_only else f"(^|.*/)?{regex_pattern}($|/.*)?$"
+            # Convert pattern to regex using placeholder to preserve **
+            DOUBLESTAR = "\x00DOUBLESTAR\x00"
+            regex_pattern = pattern.replace("**/", DOUBLESTAR)  # **/ matches zero or more dirs
+            regex_pattern = regex_pattern.replace("**", DOUBLESTAR)  # remaining **
+            # Escape special regex chars
+            regex_pattern = re.escape(regex_pattern)
+            # Restore ** as pattern that matches zero or more path segments
+            regex_pattern = regex_pattern.replace(DOUBLESTAR, "(.*/)?")
+            # Convert remaining * and ? to regex equivalents
+            regex_pattern = regex_pattern.replace(r"\*", "[^/]*")
+            regex_pattern = regex_pattern.replace(r"\?", "[^/]")
+            regex_pattern = f"^{regex_pattern}($|/)" if dir_only else f"^{regex_pattern}$"
 
             if re.search(regex_pattern, path):
                 ignored = not negation
