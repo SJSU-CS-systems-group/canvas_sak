@@ -3,7 +3,7 @@ from canvas_sak.core import *
 
 @canvas_sak.command()
 @click.argument('course_name', metavar='course')
-@click.argument('image', metavar='image')
+@click.argument('image', metavar='image', required=False)
 @click.option('--remove', is_flag=True, default=False, help="remove the course image instead of setting it")
 def set_course_image(course_name, image, remove):
     """Set or remove the course image.
@@ -17,8 +17,12 @@ def set_course_image(course_name, image, remove):
 
         canvas-sak set-course-image "My Course" https://example.com/image.jpg
 
-        canvas-sak set-course-image "My Course" --remove dummy
+        canvas-sak set-course-image "My Course" --remove
     """
+    if not remove and not image:
+        error("IMAGE is required when not using --remove")
+        sys.exit(1)
+
     canvas = get_canvas_object()
     course = get_course(canvas, course_name, is_active=False)
     info(f"found {course.name}")
