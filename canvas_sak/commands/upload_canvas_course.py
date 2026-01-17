@@ -21,13 +21,34 @@ def create_discussion(course, name, message=""):
     return rc
 
 
+class FileStub:
+    """Simple wrapper to provide .id attribute for uploaded files."""
+    def __init__(self, file_id, url):
+        self.id = file_id
+        self.url = url
+
+
 def create_file(course, name, content=b' '):
     last_slash = name.rindex("/")
     file = name[last_slash + 1:]
     parent = name[0:last_slash] if last_slash != -1 else ""
-    rc = course.upload(content, parent_folder_path=parent, name=file)
-    process_resource_record(ResourceRecord(rc[1].id, base_url(rc[1].url), "File", name, not content))
-    return rc[1]
+    # course.upload expects a file path, not bytes - use a temp file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        success, response = course.upload(tmp_path, parent_folder_path=parent, name=file)
+    finally:
+        os.unlink(tmp_path)
+    # response can be a dict or a File object depending on canvasapi version
+    if isinstance(response, dict):
+        file_id = response['id']
+        file_url = response['url']
+    else:
+        file_id = response.id
+        file_url = response.url
+    process_resource_record(ResourceRecord(file_id, base_url(file_url), "File", name, not content))
+    return FileStub(file_id, file_url)
 
 
 def create_quiz(course, name, description=''):
@@ -104,7 +125,6 @@ def upload_modules(course, source, dryrun):
                     if item_type in ["Assignment", "Discussion", "File", "Quiz"]:
                         item_name = item_options["target"] if "target" in item_options else item_title
                         name_key = item_type + item_name
-                        error(f"LOOKING FOR {name_key} in {rr4name}")
                         item_dict["content_id"] = rr4name[name_key].id if name_key in rr4name else create_stub(course,
                                                                                                                item_type,
                                                                                                                item_name).id
