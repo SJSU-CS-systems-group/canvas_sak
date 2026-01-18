@@ -60,25 +60,25 @@ canvas-sak update-quiz "My Course" "Practice" --quiz-type practice_quiz --attemp
 
 # Assignment Group files
 
-ASSIGNMENT_GROUP_NAME: WEIGHT_PERCENTAGE
-ASSIGNMENT_NAME
-ASSIGNMENT_NAME
+    ASSIGNMENT_GROUP_NAME: WEIGHT_PERCENTAGE
+    ASSIGNMENT_NAME
+    ASSIGNMENT_NAME
 
 ## Example Group File
 
-Assignments: 10%
-Assignment1
-Hard Assignment
-Easy Assignment
-LastAssignment
+    Assignments: 10%
+    Assignment1
+    Hard Assignment
+    Easy Assignment
+    LastAssignment
+    
+    Test1: 30%
+    Test1
+    
+    Test2: 30%
 
-Test1: 30%
-Test1
-
-Test2: 30%
-Test2
-
-Test3: 30%
+    Test3: 30%
+    Test3
 
 ## Validations
 

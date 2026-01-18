@@ -65,6 +65,9 @@ def update_quiz(course_name, quiz_name, active, process_all, attempts, view_resp
     # Find matching quizzes (substring match)
     if quiz_name:
         quizzes = [q for q in all_quizzes if quiz_name in q.title]
+    elif process_all:
+        # No quiz name but --all specified: process all quizzes
+        quizzes = all_quizzes
     else:
         quizzes = []
 

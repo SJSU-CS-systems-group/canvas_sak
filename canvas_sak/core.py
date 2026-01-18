@@ -14,6 +14,7 @@ import zipfile
 from collections import defaultdict, namedtuple
 from configparser import ConfigParser
 from html.parser import HTMLParser
+from importlib.metadata import version
 from typing import NamedTuple
 
 import canvasapi.file
@@ -240,6 +241,7 @@ def get_canvas_object():
 
 
 @click.group()
+@click.version_option(version=version("canvas-sak"), prog_name="canvas-sak")
 @click.option("--log-level", type=click.Choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'], case_sensitive=False),
               help="set python logging level")
 def canvas_sak(log_level):

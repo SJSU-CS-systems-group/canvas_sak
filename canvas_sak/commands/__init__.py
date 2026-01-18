@@ -16,6 +16,7 @@ __all__ = [
     "set_due_dates",
     "set_fudge_points",
     "set_letter_grade",
+    "update_assignment_groups",
     "update_quiz",
     "upload_assignment_grades",
     "upload_canvas_course",
