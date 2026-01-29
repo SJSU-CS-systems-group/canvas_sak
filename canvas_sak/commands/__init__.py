@@ -2,6 +2,7 @@ __all__ = [
     "archive_inbox",
     "code_similarity",
     "collect_reference_info",
+    "derive_assignment_score",
     "download_canvas_course",
     "download_submissions",
     "export_letter_grade",
