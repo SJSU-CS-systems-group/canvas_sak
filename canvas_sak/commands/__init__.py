@@ -24,4 +24,5 @@ __all__ = [
     "upload_canvas_course",
     "upload_qti_quiz",
     "quiz",
+    "rubrics",
 ]

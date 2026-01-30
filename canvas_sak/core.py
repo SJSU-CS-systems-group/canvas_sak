@@ -185,15 +185,15 @@ def filter_ignored_paths(paths, patterns=None):
 
 
 def error(message):
-    click.echo(click.style(message, fg='red'))
+    click.echo(click.style(message, fg='red'), err=True)
 
 
 def info(message):
-    click.echo(click.style(message, fg='blue'))
+    click.echo(click.style(message, fg='blue'), err=True)
 
 
 def warn(message):
-    click.echo(click.style(message, fg='yellow'))
+    click.echo(click.style(message, fg='yellow'), err=True)
 
 
 def output(message):
