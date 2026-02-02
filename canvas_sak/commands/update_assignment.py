@@ -33,6 +33,8 @@ def process_assignment(assignment, update_kwargs):
 @click.option('--active/--inactive', default=True, help="Search active or inactive courses")
 @click.option('--all', 'process_all', is_flag=True, default=False,
               help="Process all matching assignments instead of requiring a single match")
+@click.option('--create', is_flag=True, default=False,
+              help="Create the assignment if it does not exist (requires exact assignment name)")
 @click.option('--points', type=float, default=None,
               help="Points possible")
 @click.option('--published/--unpublished', default=None,
@@ -49,7 +51,7 @@ def process_assignment(assignment, update_kwargs):
               help="Omit or include assignment in final grade")
 @click.option('--peer-reviews/--no-peer-reviews', default=None,
               help="Enable or disable peer reviews")
-def update_assignment(course_name, assignment_name, active, process_all, points,
+def update_assignment(course_name, assignment_name, active, process_all, create, points,
                       published, submission_types, grading_type, attempts,
                       allowed_extensions, omit_from_final_grade, peer_reviews):
     """Update assignment settings and display the resulting attributes.
@@ -65,6 +67,8 @@ def update_assignment(course_name, assignment_name, active, process_all, points,
         canvas-sak update-assignment "My Course" "Lab" --all --published  # publish all assignments containing "Lab"
 
         canvas-sak update-assignment "My Course" "Final" --grading-type letter_grade --omit-from-final-grade
+
+        canvas-sak update-assignment "My Course" "New Assignment" --create --points 50  # create if not exists
     """
     canvas = get_canvas_object()
     course = get_course(canvas, course_name, is_active=active)
@@ -83,6 +87,41 @@ def update_assignment(course_name, assignment_name, active, process_all, points,
         assignments = []
 
     if len(assignments) == 0:
+        if assignment_name and create:
+            # Create the assignment since --create was specified
+            info(f"no assignments matched '{assignment_name}', creating new assignment")
+            # Build create kwargs (same as update_kwargs, but include name)
+            create_kwargs = {'name': assignment_name}
+
+            if points is not None:
+                create_kwargs['points_possible'] = points
+
+            if published is not None:
+                create_kwargs['published'] = published
+
+            if submission_types is not None:
+                create_kwargs['submission_types'] = [s.strip() for s in submission_types.split(',')]
+
+            if grading_type is not None:
+                create_kwargs['grading_type'] = grading_type
+
+            if attempts is not None:
+                create_kwargs['allowed_attempts'] = attempts
+
+            if allowed_extensions is not None:
+                create_kwargs['allowed_extensions'] = [e.strip() for e in allowed_extensions.split(',')]
+
+            if omit_from_final_grade is not None:
+                create_kwargs['omit_from_final_grade'] = omit_from_final_grade
+
+            if peer_reviews is not None:
+                create_kwargs['peer_reviews'] = peer_reviews
+
+            assignment = course.create_assignment(assignment=create_kwargs)
+            output("assignment created successfully")
+            process_assignment(assignment, {})  # Display attributes, no further updates needed
+            sys.exit(0)
+
         if assignment_name:
             error(f"no assignments matched '{assignment_name}'")
         output(f"available assignments in {course.name}:")
