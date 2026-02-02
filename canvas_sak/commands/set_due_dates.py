@@ -30,6 +30,23 @@ def parse_date_entries(entries_str):
     return result
 
 
+def parse_assignment_name(name):
+    """Parse assignment name and optional section override.
+
+    Returns (assignment_name, section_name) where section_name is None
+    if no override specified.
+
+    Example: "Quiz 1 [Section A]" -> ("Quiz 1", "Section A")
+    Example: "Quiz 1" -> ("Quiz 1", None)
+    """
+    if name.endswith(']') and '[' in name:
+        bracket_start = name.rfind('[')
+        assignment_name = name[:bracket_start].strip()
+        section_name = name[bracket_start + 1:-1].strip()
+        return assignment_name, section_name
+    return name, None
+
+
 @canvas_sak.command()
 @click.argument('course_name', metavar='course')
 @click.argument('dates_file', type=click.File('r'))
@@ -42,13 +59,26 @@ def set_due_dates(course_name, dates_file, active, dryrun):
 
     Each date is type=YYYY-MM-DD-hh:mm where type is available, due, or until.
 
-    Example: Homework 1\tavailable=2024-01-15-09:00,due=2024-01-22-23:59
+    For section-specific dates, append the section name in brackets:
+
+        Quiz 1\tdue=2024-01-20-23:59
+        Quiz 1 [Section A]\tdue=2024-01-22-23:59
+
+    Examples:
+
+        Homework 1\tavailable=2024-01-15-09:00,due=2024-01-22-23:59
+
+        Quiz 1 [Evening Section]\tdue=2024-01-25-23:59
     """
     canvas = get_canvas_object()
     course = get_course(canvas, course_name, active)
 
-    # Build assignment lookup by name
-    assignments = {a.name: a for a in course.get_assignments()}
+    # Build assignment lookup by name (with overrides for later)
+    assignments = {a.name: a for a in course.get_assignments(include=['overrides'])}
+
+    # Build section lookup by name
+    sections = {s.name: s for s in course.get_sections()}
+    info(f"found {len(sections)} sections: {', '.join(sections.keys())}")
 
     for line in dates_file:
         line = line.strip()
@@ -59,19 +89,58 @@ def set_due_dates(course_name, dates_file, active, dryrun):
             warn(f"skipping malformed line: {line}")
             continue
 
-        name = parts[0]
+        raw_name = parts[0]
         date_entries = parse_date_entries(parts[1])
 
-        if name not in assignments:
-            error(f"assignment not found: {name}")
+        # Parse assignment name and optional section
+        assignment_name, section_name = parse_assignment_name(raw_name)
+
+        if assignment_name not in assignments:
+            error(f"assignment not found: {assignment_name}")
             continue
 
         if not date_entries:
-            info(f"no dates to set for: {name}")
+            info(f"no dates to set for: {raw_name}")
             continue
 
-        if dryrun:
-            info(f"would update {name} with {date_entries}")
+        assignment = assignments[assignment_name]
+
+        if section_name:
+            # This is a section override
+            if section_name not in sections:
+                error(f"section not found: {section_name}")
+                continue
+
+            section_id = sections[section_name].id
+
+            # Check if override already exists for this section
+            existing_overrides = getattr(assignment, 'overrides', None) or []
+            existing_override = None
+            for ov in existing_overrides:
+                if ov.get('course_section_id') == section_id:
+                    existing_override = ov
+                    break
+
+            if dryrun:
+                if existing_override:
+                    info(f"would update override for {raw_name} with {date_entries}")
+                else:
+                    info(f"would create override for {raw_name} with {date_entries}")
+            else:
+                if existing_override:
+                    info(f"updating override for {raw_name}")
+                    # Update existing override
+                    override_id = existing_override.get('id')
+                    assignment.edit_override(override_id, assignment_override=date_entries)
+                else:
+                    info(f"creating override for {raw_name}")
+                    # Create new override
+                    override_data = {'course_section_id': section_id, **date_entries}
+                    assignment.create_override(assignment_override=override_data)
         else:
-            info(f"updating {name}")
-            assignments[name].edit(assignment=date_entries)
+            # Base assignment dates
+            if dryrun:
+                info(f"would update {assignment_name} with {date_entries}")
+            else:
+                info(f"updating {assignment_name}")
+                assignment.edit(assignment=date_entries)

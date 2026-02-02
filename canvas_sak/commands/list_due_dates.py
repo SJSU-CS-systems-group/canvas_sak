@@ -38,15 +38,34 @@ def list_due_dates(course_name, active):
 
     Each date is type=YYYY-MM-DD-hh:mm where type is available, due, or until.
 
-    Example: Homework 1\tavailable=2024-01-15-09:00,due=2024-01-22-23:59
+    Assignments with section overrides show the base dates first, then each
+    override on a separate line with the section name in brackets.
+
+    Example:
+        Homework 1\tavailable=2024-01-15-09:00,due=2024-01-22-23:59
+        Quiz 1\tdue=2024-01-20-23:59
+        Quiz 1 [Section A]\tdue=2024-01-22-23:59
     """
     canvas = get_canvas_object()
     course = get_course(canvas, course_name, active)
 
-    for assignment in course.get_assignments():
+    for assignment in course.get_assignments(include=['overrides']):
+        # Output base assignment dates
         date_entries = build_date_entries(
             assignment.unlock_at,
             assignment.due_at,
             assignment.lock_at
         )
         output(f"{assignment.name}\t{date_entries}")
+
+        # Output any override dates
+        overrides = getattr(assignment, 'overrides', None) or []
+        for override in overrides:
+            override_title = override.get('title', 'Override')
+            override_dates = build_date_entries(
+                override.get('unlock_at'),
+                override.get('due_at'),
+                override.get('lock_at')
+            )
+            if override_dates:
+                output(f"{assignment.name} [{override_title}]\t{override_dates}")
