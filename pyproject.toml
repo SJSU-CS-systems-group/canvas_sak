@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "canvas-sak"
-version = "1.0.16"
+version = "1.0.17"
 description = "Command‑line Swiss Army Knife for Canvas LMS"
 readme = "README.md"
 requires-python = ">=3.7"

@@ -61,11 +61,17 @@ def list_due_dates(course_name, active):
         # Output any override dates
         overrides = getattr(assignment, 'overrides', None) or []
         for override in overrides:
-            override_title = override.get('title', 'Override')
-            override_dates = build_date_entries(
-                override.get('unlock_at'),
-                override.get('due_at'),
-                override.get('lock_at')
-            )
+            # Handle both dict and object access patterns
+            if isinstance(override, dict):
+                override_title = override.get('title', 'Override')
+                unlock_at = override.get('unlock_at')
+                due_at = override.get('due_at')
+                lock_at = override.get('lock_at')
+            else:
+                override_title = getattr(override, 'title', 'Override')
+                unlock_at = getattr(override, 'unlock_at', None)
+                due_at = getattr(override, 'due_at', None)
+                lock_at = getattr(override, 'lock_at', None)
+            override_dates = build_date_entries(unlock_at, due_at, lock_at)
             if override_dates:
                 output(f"{assignment.name} [{override_title}]\t{override_dates}")

@@ -117,7 +117,9 @@ def set_due_dates(course_name, dates_file, active, dryrun):
             existing_overrides = getattr(assignment, 'overrides', None) or []
             existing_override = None
             for ov in existing_overrides:
-                if ov.get('course_section_id') == section_id:
+                # Handle both dict and object access patterns
+                ov_section_id = ov.get('course_section_id') if isinstance(ov, dict) else getattr(ov, 'course_section_id', None)
+                if ov_section_id == section_id:
                     existing_override = ov
                     break
 
@@ -130,7 +132,7 @@ def set_due_dates(course_name, dates_file, active, dryrun):
                 if existing_override:
                     info(f"updating override for {raw_name}")
                     # Update existing override
-                    override_id = existing_override.get('id')
+                    override_id = existing_override.get('id') if isinstance(existing_override, dict) else getattr(existing_override, 'id')
                     assignment.edit_override(override_id, assignment_override=date_entries)
                 else:
                     info(f"creating override for {raw_name}")
