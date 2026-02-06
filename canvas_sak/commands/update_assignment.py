@@ -1,7 +1,7 @@
 from canvas_sak.core import *
 
 
-def process_assignment(assignment, update_kwargs):
+def process_assignment(assignment, update_kwargs, group_names=None):
     """Update a single assignment and display its attributes."""
     if update_kwargs:
         info(f"updating assignment '{assignment.name}' with: {update_kwargs}")
@@ -24,7 +24,9 @@ def process_assignment(assignment, update_kwargs):
     output(f"  Due At: {getattr(assignment, 'due_at', 'N/A')}")
     output(f"  Unlock At: {getattr(assignment, 'unlock_at', 'N/A')}")
     output(f"  Lock At: {getattr(assignment, 'lock_at', 'N/A')}")
-    output(f"  Assignment Group: {getattr(assignment, 'assignment_group_id', 'N/A')}")
+    group_id = getattr(assignment, 'assignment_group_id', None)
+    group_display = group_names.get(group_id, group_id) if group_names and group_id else 'N/A'
+    output(f"  Assignment Group: {group_display}")
 
 
 @canvas_sak.command()
@@ -52,7 +54,7 @@ def process_assignment(assignment, update_kwargs):
 @click.option('--peer-reviews/--no-peer-reviews', default=None,
               help="Enable or disable peer reviews")
 @click.option('--assignment-group', default=None,
-              help="Assignment group name to place the assignment in")
+              help="Only process assignments whose assignment group name contains this substring")
 def update_assignment(course_name, assignment_name, active, process_all, create, points,
                       published, submission_types, grading_type, attempts,
                       allowed_extensions, omit_from_final_grade, peer_reviews, assignment_group):
@@ -72,26 +74,27 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
 
         canvas-sak update-assignment "My Course" "New Assignment" --create --points 50  # create if not exists
 
-        canvas-sak update-assignment "My Course" "Homework 1" --assignment-group "Homework"  # move to group
+        canvas-sak update-assignment "My Course" "Lab" --assignment-group "Labs" --all --published  # publish all "Lab" assignments in groups matching "Labs"
     """
     canvas = get_canvas_object()
     course = get_course(canvas, course_name, is_active=active)
     info(f"found {course.name}")
 
-    # Look up assignment group if specified
-    assignment_group_id = None
-    if assignment_group is not None:
-        existing_groups = {g.name: g for g in course.get_assignment_groups()}
-        if assignment_group not in existing_groups:
-            error(f"assignment group '{assignment_group}' not found. available groups:")
-            for g in existing_groups:
-                error(f"    {g}")
-            sys.exit(2)
-        assignment_group_id = existing_groups[assignment_group].id
-        info(f"found assignment group '{assignment_group}' (id: {assignment_group_id})")
-
-    # Get all assignments
+    # Get all assignments and assignment groups
     all_assignments = list(course.get_assignments())
+    group_names = {g.id: g.name for g in course.get_assignment_groups()}
+
+    # Filter by assignment group if specified
+    if assignment_group is not None:
+        groups = group_names
+        matching_group_ids = {gid for gid, name in groups.items() if assignment_group in name}
+        if not matching_group_ids:
+            error(f"no assignment groups matched '{assignment_group}'. available groups:")
+            for name in groups.values():
+                error(f"    {name}")
+            sys.exit(2)
+        info(f"filtering to assignment groups: {[groups[gid] for gid in matching_group_ids]}")
+        all_assignments = [a for a in all_assignments if a.assignment_group_id in matching_group_ids]
 
     # Find matching assignments (substring match)
     if assignment_name:
@@ -133,12 +136,9 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
             if peer_reviews is not None:
                 create_kwargs['peer_reviews'] = peer_reviews
 
-            if assignment_group_id is not None:
-                create_kwargs['assignment_group_id'] = assignment_group_id
-
             assignment = course.create_assignment(assignment=create_kwargs)
             output("assignment created successfully")
-            process_assignment(assignment, {})  # Display attributes, no further updates needed
+            process_assignment(assignment, {}, group_names)  # Display attributes, no further updates needed
             sys.exit(0)
 
         if assignment_name:
@@ -181,10 +181,7 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
     if peer_reviews is not None:
         update_kwargs['peer_reviews'] = peer_reviews
 
-    if assignment_group_id is not None:
-        update_kwargs['assignment_group_id'] = assignment_group_id
-
     # Process assignments
     info(f"processing {len(assignments)} assignment(s)")
     for assignment in assignments:
-        process_assignment(assignment, update_kwargs)
+        process_assignment(assignment, update_kwargs, group_names)
