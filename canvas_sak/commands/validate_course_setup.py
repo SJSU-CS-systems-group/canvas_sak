@@ -51,6 +51,8 @@ def check_until_date_consistency_for_group(assignments):
     for a in assignments:
         sub_types = set(a.submission_types) if a.submission_types else set()
         if sub_types & non_submittable:
+            if not a.due_at:
+                issues.append((a.name, "non-submittable assignment missing due date"))
             continue
 
         due = parse_iso_date(a.due_at)

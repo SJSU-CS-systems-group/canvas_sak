@@ -104,10 +104,20 @@ class TestCheckUntilDateConsistency:
         assert count == 0
         assert issues == []
 
-    def test_skips_non_submittable(self):
+    def test_non_submittable_missing_due_date(self):
         assignments = [
             make_assignment("Attendance", submission_types=['none']),
             make_assignment("Ungraded", submission_types=['not_graded']),
+        ]
+        offset, count, issues = check_until_date_consistency_for_group(assignments)
+        assert offset is None
+        assert len(issues) == 2
+        assert "non-submittable" in issues[0][1]
+
+    def test_non_submittable_with_due_date_ok(self):
+        assignments = [
+            make_assignment("Attendance", due_at="2024-01-15T23:59:00Z",
+                            submission_types=['none']),
         ]
         offset, count, issues = check_until_date_consistency_for_group(assignments)
         assert offset is None
