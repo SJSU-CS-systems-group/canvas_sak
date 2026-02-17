@@ -25,4 +25,5 @@ __all__ = [
     "upload_qti_quiz",
     "quiz",
     "rubrics",
+    "validate_course_setup",
 ]
