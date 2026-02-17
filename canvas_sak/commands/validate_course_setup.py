@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
+import canvas_sak.core as core
 from canvas_sak.core import *
 
 
@@ -43,7 +44,7 @@ def check_until_date_consistency_for_group(assignments):
         - total_counted is how many assignments had a valid offset
         - issues is a list of (name, message) tuples
     """
-    non_submittable = {'none', 'not_graded'}
+    non_submittable = {'none', 'not_graded', 'external_tool'}
     offsets = []
     offset_assignments = []
     issues = []
@@ -135,6 +136,19 @@ def extract_links(html):
     return links
 
 
+def normalize_internal_path(path):
+    """Normalize an internal Canvas path for resource map lookup.
+
+    Strips query params, fragments, and trailing suffixes like /download, /preview
+    that Canvas appends to file URLs.
+    """
+    import re
+    path = path.split('?')[0].split('#')[0]
+    # Strip /download, /preview, /download?... etc. from file URLs
+    path = re.sub(r'(/files/\d+)/(?:download|preview)$', r'\1', path)
+    return path
+
+
 def classify_link(url, canvas_domain, course_id):
     """Classify a link as internal, internal-other-course, external, or skip.
 
@@ -151,7 +165,7 @@ def classify_link(url, canvas_domain, course_id):
     if not parsed.scheme and not parsed.netloc:
         path = parsed.path
         if path.startswith(f'/courses/{course_id}'):
-            return 'internal', path.split('?')[0].split('#')[0]
+            return 'internal', normalize_internal_path(path)
         elif path.startswith('/courses/'):
             return 'internal_other', path
         return 'skip', None
@@ -161,7 +175,7 @@ def classify_link(url, canvas_domain, course_id):
     if parsed.netloc == canvas_parsed.netloc:
         path = parsed.path
         if path.startswith(f'/courses/{course_id}'):
-            return 'internal', path.split('?')[0].split('#')[0]
+            return 'internal', normalize_internal_path(path)
         elif path.startswith('/courses/'):
             return 'internal_other', path
         return 'skip', None
@@ -249,8 +263,11 @@ def collect_content_with_html(course):
     return items
 
 
-def check_external_link(url, timeout, cache):
+def check_external_link(url, timeout, cache, canvas_domain=None, token=None):
     """Check if an external URL is reachable.
+
+    If the URL is on the Canvas domain, the access token is included
+    in the request so that authenticated pages can be verified.
 
     Returns:
         (ok, message) tuple
@@ -258,10 +275,17 @@ def check_external_link(url, timeout, cache):
     if url in cache:
         return cache[url]
 
+    headers = {}
+    if canvas_domain and token:
+        parsed = urlparse(url)
+        canvas_parsed = urlparse(canvas_domain)
+        if parsed.netloc == canvas_parsed.netloc:
+            headers['Authorization'] = f'Bearer {token}'
+
     try:
-        resp = requests.head(url, timeout=timeout, allow_redirects=True)
+        resp = requests.head(url, timeout=timeout, allow_redirects=True, headers=headers)
         if resp.status_code == 405:
-            resp = requests.get(url, timeout=timeout, allow_redirects=True, stream=True)
+            resp = requests.get(url, timeout=timeout, allow_redirects=True, stream=True, headers=headers)
         ok = resp.status_code < 400
         msg = None if ok else f"HTTP {resp.status_code}"
     except requests.ConnectionError:
@@ -413,7 +437,7 @@ def validate_course_setup(course_name, active, check_links, check_dates,
             for source_type, source_name, html in content_items:
                 links = extract_links(html)
                 for tag, attr, url in links:
-                    category, normalized = classify_link(url, canvas_url, course_id)
+                    category, normalized = classify_link(url, core.canvas_url, course_id)
 
                     if category == 'skip':
                         continue
@@ -426,10 +450,13 @@ def validate_course_setup(course_name, active, check_links, check_dates,
                             warn(f'  WARNING: {source_type}: "{source_name}" -> {normalized} - unpublished')
                             link_issues += 1
                     elif category == 'internal_other':
-                        warn(f'  WARNING: {source_type}: "{source_name}" -> {url} - cross-course link (cannot verify)')
-                        link_issues += 1
+                        full_url = url if url.startswith('http') else f"{core.canvas_url}{url}"
+                        ok, msg = check_external_link(full_url, timeout, ext_cache, core.canvas_url, core.access_token)
+                        if not ok:
+                            warn(f'  WARNING: {source_type}: "{source_name}" -> {url} - {msg}')
+                            link_issues += 1
                     elif category == 'external' and external_links:
-                        ok, msg = check_external_link(url, timeout, ext_cache)
+                        ok, msg = check_external_link(url, timeout, ext_cache, core.canvas_url, core.access_token)
                         if not ok:
                             warn(f'  WARNING: {source_type}: "{source_name}" -> {url} - {msg}')
                             link_issues += 1

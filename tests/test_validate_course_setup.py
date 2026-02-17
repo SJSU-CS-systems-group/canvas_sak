@@ -12,6 +12,7 @@ from canvas_sak.commands.validate_course_setup import (
     extract_links,
     format_timedelta,
     group_assignments_by_group,
+    normalize_internal_path,
     parse_iso_date,
 )
 
@@ -118,6 +119,24 @@ class TestCheckUntilDateConsistency:
         assignments = [
             make_assignment("Attendance", due_at="2024-01-15T23:59:00Z",
                             submission_types=['none']),
+        ]
+        offset, count, issues = check_until_date_consistency_for_group(assignments)
+        assert offset is None
+        assert issues == []
+
+    def test_external_tool_treated_as_non_submittable(self):
+        assignments = [
+            make_assignment("iClicker", submission_types=['external_tool']),
+        ]
+        offset, count, issues = check_until_date_consistency_for_group(assignments)
+        assert offset is None
+        assert len(issues) == 1
+        assert "non-submittable" in issues[0][1]
+
+    def test_external_tool_with_due_date_ok(self):
+        assignments = [
+            make_assignment("iClicker", due_at="2024-01-15T23:59:00Z",
+                            submission_types=['external_tool']),
         ]
         offset, count, issues = check_until_date_consistency_for_group(assignments)
         assert offset is None
@@ -271,6 +290,38 @@ class TestClassifyLink:
     def test_relative_non_course(self):
         cat, path = classify_link('/profile', self.CANVAS, self.COURSE_ID)
         assert cat == 'skip'
+
+    def test_file_download_normalized(self):
+        cat, path = classify_link('/courses/123/files/456/download', self.CANVAS, self.COURSE_ID)
+        assert cat == 'internal'
+        assert path == '/courses/123/files/456'
+
+    def test_file_preview_normalized(self):
+        cat, path = classify_link('/courses/123/files/456/preview', self.CANVAS, self.COURSE_ID)
+        assert cat == 'internal'
+        assert path == '/courses/123/files/456'
+
+    def test_absolute_file_download_normalized(self):
+        cat, path = classify_link('https://canvas.example.com/courses/123/files/456/download', self.CANVAS, self.COURSE_ID)
+        assert cat == 'internal'
+        assert path == '/courses/123/files/456'
+
+
+class TestNormalizeInternalPath:
+    def test_strips_download(self):
+        assert normalize_internal_path('/courses/1/files/99/download') == '/courses/1/files/99'
+
+    def test_strips_preview(self):
+        assert normalize_internal_path('/courses/1/files/99/preview') == '/courses/1/files/99'
+
+    def test_strips_query_params(self):
+        assert normalize_internal_path('/courses/1/pages/foo?bar=1') == '/courses/1/pages/foo'
+
+    def test_no_change_for_normal_path(self):
+        assert normalize_internal_path('/courses/1/assignments/5') == '/courses/1/assignments/5'
+
+    def test_does_not_strip_non_file_suffix(self):
+        assert normalize_internal_path('/courses/1/pages/download') == '/courses/1/pages/download'
 
 
 class TestGroupAssignmentsByGroup:
