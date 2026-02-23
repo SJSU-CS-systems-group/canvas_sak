@@ -71,12 +71,89 @@ def validate_formula(formula, var_names):
     return None  # No error
 
 
+CHANGE_SCORE_WITH_PREV = re.compile(
+    r'^change-score\s+previous:\s*([\d.]+)\s+new:\s*([\d.]+)$'
+)
+CHANGE_SCORE_NO_PREV = re.compile(
+    r'^change-score\s+new:\s*([\d.]+)$'
+)
+
+
+def build_change_score_comment(previous_score, new_score):
+    """Build a change-score comment string.
+
+    Returns 'change-score previous: X new: Y' or 'change-score new: Y'
+    if previous_score is None.
+    """
+    if previous_score is None:
+        return f"change-score new: {new_score}"
+    return f"change-score previous: {previous_score} new: {new_score}"
+
+
+def parse_change_score_comment(comment_text):
+    """Parse a change-score comment string.
+
+    Returns (previous, new) tuple where previous may be None,
+    or None if the comment doesn't match the change-score format.
+    """
+    if not comment_text:
+        return None
+    m = CHANGE_SCORE_WITH_PREV.match(comment_text.strip())
+    if m:
+        return (float(m.group(1)), float(m.group(2)))
+    m = CHANGE_SCORE_NO_PREV.match(comment_text.strip())
+    if m:
+        return (None, float(m.group(1)))
+    return None
+
+
+def find_last_manual_score(current_score, comments):
+    """Walk backwards through change-score comments to find the original manual score.
+
+    If current_score matches the latest change-score "new" value, follows the chain
+    of "previous" values back to find the score that was set before any tool runs.
+    Returns None if the chain ends with a change-score that has no previous value.
+    """
+    # Extract all change-score comments in order
+    parsed = []
+    for c in comments:
+        text = c.get("comment", "") if isinstance(c, dict) else getattr(c, "comment", "")
+        result = parse_change_score_comment(text)
+        if result is not None:
+            parsed.append(result)
+
+    if not parsed:
+        return current_score
+
+    # Check if the current score matches the latest change-score "new"
+    latest_prev, latest_new = parsed[-1]
+    if current_score != latest_new:
+        # Score was manually changed after last tool run
+        return current_score
+
+    # Walk the chain backwards
+    score_to_find = latest_prev
+    if score_to_find is None:
+        return None
+
+    # Look through earlier change-score comments (in reverse) for a chain
+    for prev, new in reversed(parsed[:-1]):
+        if new == score_to_find:
+            score_to_find = prev
+            if score_to_find is None:
+                return None
+
+    return score_to_find
+
+
 @canvas_sak.command()
 @click.argument("course")
 @click.argument("target_assignment")
 @click.option("--formula", required=True, help="Formula using assignment names with _ for spaces")
 @click.option("--dryrun/--no-dryrun", default=True)
-def derive_assignment_score(course, target_assignment, formula, dryrun):
+@click.option("--use-last-assigned/--no-use-last-assigned", default=False,
+              help="Use the last manually-assigned score as the previous score instead of the current score")
+def derive_assignment_score(course, target_assignment, formula, dryrun, use_last_assigned):
     '''Compute assignment scores from a formula using other assignments.
 
     Assignment names in the formula use underscores for spaces.
@@ -152,7 +229,8 @@ def derive_assignment_score(course, target_assignment, formula, dryrun):
     computed_scores = {}
     skipped_count = 0
 
-    for submission in target.get_submissions():
+    include = ['submission_comments'] if use_last_assigned else []
+    for submission in target.get_submissions(include=include):
         user_id = submission.user_id
         user_name = user_info.get(user_id, str(user_id))
 
@@ -174,7 +252,12 @@ def derive_assignment_score(course, target_assignment, formula, dryrun):
 
         try:
             result = eval(formula, {"__builtins__": {}}, namespace)
-            computed_scores[submission] = (user_name, result)
+            if use_last_assigned:
+                comments = getattr(submission, 'submission_comments', [])
+                previous_score = find_last_manual_score(submission.score, comments)
+            else:
+                previous_score = submission.score
+            computed_scores[submission] = (user_name, result, previous_score)
         except ZeroDivisionError:
             warn(f"Skipping {user_name}: division by zero")
             skipped_count += 1
@@ -185,12 +268,17 @@ def derive_assignment_score(course, target_assignment, formula, dryrun):
     info(f"Computed {len(computed_scores)} scores, skipped {skipped_count}")
 
     if dryrun:
-        for submission, (user_name, score) in computed_scores.items():
-            info(f"  {user_name}: {score:.2f}")
+        for submission, (user_name, score, previous_score) in computed_scores.items():
+            comment = build_change_score_comment(previous_score, score)
+            info(f"  {user_name}: {score:.2f} ({comment})")
         warn("This was a dryrun. Nothing has been updated")
     else:
         with click.progressbar(length=len(computed_scores), label="updating grades", show_pos=True) as bar:
-            for submission, (user_name, score) in computed_scores.items():
-                submission.edit(submission={'posted_grade': score})
+            for submission, (user_name, score, previous_score) in computed_scores.items():
+                comment = build_change_score_comment(previous_score, score)
+                submission.edit(
+                    submission={'posted_grade': score},
+                    comment={'text_comment': comment},
+                )
                 bar.update(1)
         info(f"Updated {len(computed_scores)} grades")
