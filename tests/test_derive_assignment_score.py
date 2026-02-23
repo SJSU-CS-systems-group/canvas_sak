@@ -7,8 +7,41 @@ import pytest
 from canvas_sak.commands.derive_assignment_score import (
     build_change_score_comment,
     find_last_manual_score,
+    normalize_name,
     parse_change_score_comment,
 )
+
+
+class TestNormalizeName:
+    def test_spaces_become_underscores(self):
+        assert normalize_name("Quiz 1") == "Quiz_1"
+
+    def test_dash_becomes_underscore(self):
+        assert normalize_name("Quiz-1") == "Quiz_1"
+
+    def test_space_dash_space_collapses(self):
+        assert normalize_name("Quiz - 1") == "Quiz_1"
+
+    def test_trailing_operators_stripped(self):
+        assert normalize_name("C++") == "C"
+
+    def test_slash_becomes_underscore(self):
+        assert normalize_name("Pass/Fail") == "Pass_Fail"
+
+    def test_star_becomes_underscore(self):
+        assert normalize_name("Bonus * 2") == "Bonus_2"
+
+    def test_multiple_spaces_collapse(self):
+        assert normalize_name("Quiz   1") == "Quiz_1"
+
+    def test_no_operators_unchanged(self):
+        assert normalize_name("Midterm") == "Midterm"
+
+    def test_underscore_input_unchanged(self):
+        assert normalize_name("Quiz_1") == "Quiz_1"
+
+    def test_mixed_operators_collapse(self):
+        assert normalize_name("A - B + C") == "A_B_C"
 
 
 class TestBuildChangeScoreComment:

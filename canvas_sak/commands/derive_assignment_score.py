@@ -23,9 +23,44 @@ def extract_variable_names(formula):
     return list(set(variables))
 
 
-def variable_to_assignment_name(var_name):
-    """Convert variable name (with underscores) to assignment name (with spaces)."""
-    return var_name.replace('_', ' ')
+def normalize_name(name):
+    """Normalize a name by replacing spaces and math operators with underscores.
+
+    Consecutive operator/space characters are collapsed into a single underscore.
+    This allows formula variables like Quiz_1 to match assignment names like
+    "Quiz 1", "Quiz - 1", "Quiz-1", etc.
+    """
+    return re.sub(r'[\s+\-*/]+', '_', name).strip('_')
+
+
+def get_assignment_normalized(course, var_name):
+    """Find an assignment by normalized name comparison.
+
+    Normalizes both the variable name and assignment titles by replacing
+    spaces and math operators with underscores, then does substring matching.
+    """
+    normalized_var = normalize_name(var_name)
+    assignments = list(course.get_course_level_assignment_data())
+
+    matches = [a for a in assignments if normalized_var in normalize_name(a['title'])]
+
+    if not matches:
+        error(f'Assignment for variable "{var_name}" not found. Available:')
+        for a in assignments:
+            error(f"    {a['title']} (formula name: {normalize_name(a['title'])})")
+        sys.exit(2)
+
+    if len(matches) > 1:
+        exact = [a for a in matches if normalized_var == normalize_name(a['title'])]
+        if len(exact) == 1:
+            matches = exact
+        else:
+            error(f'Multiple assignments match "{var_name}":')
+            for a in matches:
+                error(f"    {a['title']}")
+            sys.exit(2)
+
+    return course.get_assignment(matches[0]['assignment_id'])
 
 
 def validate_formula(formula, var_names):
@@ -51,7 +86,7 @@ def validate_formula(formula, var_names):
                 return f"Function '{name}' failed unexpectedly - please report this bug"
             else:
                 available = ', '.join(sorted(SAFE_FUNCTION_NAMES))
-                return f"Unknown name '{name}'. Assignment variables use _ for spaces. Available functions: {available}"
+                return f"Unknown name '{name}'. Assignment variables use _ for spaces and math operators. Available functions: {available}"
         return f"Name error: {e}"
     except TypeError as e:
         error_str = str(e)
@@ -149,14 +184,17 @@ def find_last_manual_score(current_score, comments):
 @canvas_sak.command()
 @click.argument("course")
 @click.argument("target_assignment")
-@click.option("--formula", required=True, help="Formula using assignment names with _ for spaces")
+@click.option("--formula", required=True, help="Formula using assignment names with _ for spaces and math operators")
 @click.option("--dryrun/--no-dryrun", default=True)
 @click.option("--use-last-assigned/--no-use-last-assigned", default=False,
               help="Use the last manually-assigned score as the previous score instead of the current score")
 def derive_assignment_score(course, target_assignment, formula, dryrun, use_last_assigned):
     '''Compute assignment scores from a formula using other assignments.
 
-    Assignment names in the formula use underscores for spaces.
+    Assignment names in the formula use underscores for spaces and math
+    operators (+ - * /). For example, an assignment named "Quiz - 1" becomes
+    Quiz_1 in the formula. Consecutive spaces/operators collapse into one _.
+
     Scores are converted to percentages (0-100) before applying the formula.
 
     Available functions: min, max, sum, abs, round
@@ -173,12 +211,8 @@ def derive_assignment_score(course, target_assignment, formula, dryrun, use_last
     canvas = get_canvas_object()
     course = get_course(canvas, course)
 
-    # Get the target assignment (convert underscores to spaces)
-    target_assignment_name = variable_to_assignment_name(target_assignment)
-    target = get_assignment(course, target_assignment_name)
-    if not target:
-        error(f'Target assignment "{target_assignment_name}" not found')
-        sys.exit(2)
+    # Get the target assignment
+    target = get_assignment_normalized(course, target_assignment)
 
     # Extract variable names from formula
     var_names = extract_variable_names(formula)
@@ -198,11 +232,7 @@ def derive_assignment_score(course, target_assignment, formula, dryrun, use_last
     # Map variable names to assignments
     assignments = {}
     for var_name in var_names:
-        assignment_name = variable_to_assignment_name(var_name)
-        assignment = get_assignment(course, assignment_name)
-        if not assignment:
-            error(f'Assignment "{assignment_name}" (from variable {var_name}) not found')
-            sys.exit(2)
+        assignment = get_assignment_normalized(course, var_name)
         assignments[var_name] = assignment
         info(f"  {var_name} -> {assignment.name} ({assignment.points_possible} pts)")
 
