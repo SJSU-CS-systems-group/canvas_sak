@@ -257,7 +257,7 @@ def derive_assignment_score(course, target_assignment, formula, dryrun, use_last
                 previous_score = find_last_manual_score(submission.score, comments)
             else:
                 previous_score = submission.score
-            computed_scores[submission] = (user_name, result, previous_score)
+            computed_scores[submission] = (user_name, result, previous_score, scores)
         except ZeroDivisionError:
             warn(f"Skipping {user_name}: division by zero")
             skipped_count += 1
@@ -268,13 +268,14 @@ def derive_assignment_score(course, target_assignment, formula, dryrun, use_last
     info(f"Computed {len(computed_scores)} scores, skipped {skipped_count}")
 
     if dryrun:
-        for submission, (user_name, score, previous_score) in computed_scores.items():
+        for submission, (user_name, score, previous_score, scores) in computed_scores.items():
+            parts = ' '.join(f"{var}={scores[var]:.2f}" for var in sorted(scores))
             comment = build_change_score_comment(previous_score, score)
-            info(f"  {user_name}: {score:.2f} ({comment})")
+            info(f"  {user_name}: {score:.2f} [{parts}] ({comment})")
         warn("This was a dryrun. Nothing has been updated")
     else:
         with click.progressbar(length=len(computed_scores), label="updating grades", show_pos=True) as bar:
-            for submission, (user_name, score, previous_score) in computed_scores.items():
+            for submission, (user_name, score, previous_score, _scores) in computed_scores.items():
                 comment = build_change_score_comment(previous_score, score)
                 submission.edit(
                     submission={'posted_grade': score},
