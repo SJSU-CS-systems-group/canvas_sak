@@ -6,6 +6,7 @@ import pytest
 
 from canvas_sak.commands.derive_assignment_score import (
     build_change_score_comment,
+    check_duplicate_assignments,
     find_last_manual_score,
     normalize_name,
     parse_change_score_comment,
@@ -42,6 +43,45 @@ class TestNormalizeName:
 
     def test_mixed_operators_collapse(self):
         assert normalize_name("A - B + C") == "A_B_C"
+
+
+class TestCheckDuplicateAssignments:
+    def _make_assignment(self, id, name):
+        return SimpleNamespace(id=id, name=name)
+
+    def test_no_duplicates(self):
+        assignments = {
+            "Quiz_1": self._make_assignment(1, "Quiz 1"),
+            "Quiz_2": self._make_assignment(2, "Quiz 2"),
+        }
+        assert check_duplicate_assignments(assignments) is None
+
+    def test_duplicate_detected(self):
+        assignments = {
+            "Quiz_1": self._make_assignment(1, "Quiz 1"),
+            "Quiz__1": self._make_assignment(1, "Quiz 1"),
+        }
+        result = check_duplicate_assignments(assignments)
+        assert result is not None
+        assert "Quiz_1" in result
+        assert "Quiz__1" in result
+        assert "Quiz 1" in result
+
+    def test_single_variable(self):
+        assignments = {
+            "Quiz_1": self._make_assignment(1, "Quiz 1"),
+        }
+        assert check_duplicate_assignments(assignments) is None
+
+    def test_three_variables_one_duplicate_pair(self):
+        assignments = {
+            "Quiz_1": self._make_assignment(1, "Quiz 1"),
+            "Quiz__1": self._make_assignment(1, "Quiz 1"),
+            "Midterm": self._make_assignment(2, "Midterm"),
+        }
+        result = check_duplicate_assignments(assignments)
+        assert result is not None
+        assert "Midterm" not in result
 
 
 class TestBuildChangeScoreComment:

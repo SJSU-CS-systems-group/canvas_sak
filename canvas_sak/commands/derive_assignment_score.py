@@ -63,6 +63,25 @@ def get_assignment_normalized(course, var_name):
     return course.get_assignment(matches[0]['assignment_id'])
 
 
+def check_duplicate_assignments(assignments):
+    """Check if multiple variable names refer to the same assignment.
+
+    Args:
+        assignments: dict mapping variable names to assignment objects
+
+    Returns:
+        Error message string if duplicates found, None otherwise.
+    """
+    seen = {}  # assignment id -> first variable name
+    for var_name, assignment in assignments.items():
+        if assignment.id in seen:
+            first_var = seen[assignment.id]
+            return (f'Inconsistent naming: "{first_var}" and "{var_name}" '
+                    f'both refer to assignment "{assignment.name}"')
+        seen[assignment.id] = var_name
+    return None
+
+
 def validate_formula(formula, var_names):
     """Validate formula syntax and return error message if invalid."""
     # First try to compile the formula
@@ -235,6 +254,12 @@ def derive_assignment_score(course, target_assignment, formula, dryrun, use_last
         assignment = get_assignment_normalized(course, var_name)
         assignments[var_name] = assignment
         info(f"  {var_name} -> {assignment.name} ({assignment.points_possible} pts)")
+
+    # Check for duplicate assignment references
+    dup_error = check_duplicate_assignments(assignments)
+    if dup_error:
+        error(dup_error)
+        sys.exit(2)
 
     # Build a mapping: user_id -> {var_name: percentage}
     user_scores = defaultdict(dict)
