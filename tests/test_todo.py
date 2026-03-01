@@ -222,9 +222,9 @@ class TestUpcomingCommand:
         runner = CliRunner()
         result = runner.invoke(canvas_sak, ["todo", "--upcoming"])
         assert result.exit_code == 0
+        lines = result.output.strip().split("\n")
+        assert lines[0] == "upcoming"
         assert "Place Boats" in result.output
-        assert "due" in result.output
-        assert "\t" in result.output
 
     @patch("canvas_sak.commands.todo.get_courses")
     @patch("canvas_sak.commands.todo.get_canvas_object")
@@ -295,8 +295,9 @@ class TestRecentPastCommand:
         runner = CliRunner()
         result = runner.invoke(canvas_sak, ["todo", "--recent-past"])
         assert result.exit_code == 0
+        lines = result.output.strip().split("\n")
+        assert lines[0] == "recent past"
         assert "converse" in result.output
-        assert "due" in result.output
 
     @patch("canvas_sak.commands.todo.get_courses")
     @patch("canvas_sak.commands.todo.get_canvas_object")
@@ -333,3 +334,27 @@ class TestRecentPastCommand:
         result = runner.invoke(canvas_sak, ["todo", "--upcoming", "--recent-past"])
         assert result.exit_code == 0
         assert "no upcoming or recent" in result.output
+
+    @patch("canvas_sak.commands.todo.get_courses")
+    @patch("canvas_sak.commands.todo.get_canvas_object")
+    def test_both_flags_with_results(self, mock_get_canvas, mock_get_courses):
+        canvas = MagicMock()
+        mock_get_canvas.return_value = canvas
+
+        course = MagicMock()
+        course.name = "SP26: CMPE-30 Programming"
+        course.get_assignments.return_value = [
+            _make_assignment("Past HW", due_at="2026-02-25T00:00:00Z"),
+            _make_assignment("Future HW", due_at="2026-03-05T00:00:00Z"),
+        ]
+        mock_get_courses.return_value = [course]
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, ["todo", "--upcoming", "--recent-past"])
+        assert result.exit_code == 0
+        lines = result.output.strip().split("\n")
+        assert lines[0] == "recent past"
+        assert "Past HW" in lines[1]
+        upcoming_idx = lines.index("upcoming")
+        assert upcoming_idx > 1
+        assert "Future HW" in lines[upcoming_idx + 1]

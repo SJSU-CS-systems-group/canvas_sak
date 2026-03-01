@@ -76,20 +76,27 @@ def todo(remove, dryrun, upcoming, recent_past):
     if upcoming or recent_past:
         now = datetime.datetime.now(datetime.timezone.utc)
         courses = get_courses(canvas, "", is_active=True)
-        found = False
+        recent_past_results = []
+        upcoming_results = []
         for course in courses:
             course_name = format_course_name(course.name)
             assignments = list(course.get_assignments())
-            if upcoming:
-                for name, reason, dt in upcoming_assignments(assignments, now, 10):
-                    output("\t".join([course_name, reason, name, dt.strftime("%Y-%m-%d %H:%M")]))
-                    found = True
             if recent_past:
                 start = now - datetime.timedelta(days=10)
                 for name, reason, dt in assignments_in_window(assignments, start, now):
-                    output("\t".join([course_name, reason, name, dt.strftime("%Y-%m-%d %H:%M")]))
-                    found = True
-        if not found:
+                    recent_past_results.append("\t".join([course_name, reason, name, dt.strftime("%Y-%m-%d %H:%M")]))
+            if upcoming:
+                for name, reason, dt in upcoming_assignments(assignments, now, 10):
+                    upcoming_results.append("\t".join([course_name, reason, name, dt.strftime("%Y-%m-%d %H:%M")]))
+        if recent_past_results:
+            output("recent past")
+            for line in recent_past_results:
+                output(line)
+        if upcoming_results:
+            output("upcoming")
+            for line in upcoming_results:
+                output(line)
+        if not recent_past_results and not upcoming_results:
             label = "upcoming or recent" if upcoming and recent_past else "upcoming" if upcoming else "recent"
             output(f"no {label} assignments")
         return
