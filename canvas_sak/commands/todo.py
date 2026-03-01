@@ -19,6 +19,30 @@ def parse_remove_file(f):
     return keys
 
 
+def parse_datetime(s):
+    return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+def assignments_in_window(assignments, start, end):
+    """Return list of (name, reason, dt) for assignments due or locking between start and end."""
+    results = []
+    for a in assignments:
+        for field, reason in [("due_at", "due"), ("lock_at", "locks")]:
+            val = getattr(a, field, None)
+            if not val:
+                continue
+            dt = parse_datetime(val)
+            if start <= dt <= end:
+                results.append((a.name, reason, dt))
+    results.sort(key=lambda r: r[2])
+    return results
+
+
+def upcoming_assignments(assignments, now, days):
+    """Return list of (name, reason, dt) for assignments due or locking within days."""
+    return assignments_in_window(assignments, now, now + datetime.timedelta(days=days))
+
+
 def format_todo_item(item):
     course_name = format_course_name(item.context_name)
     assignment_name = item.assignment["name"]
@@ -41,9 +65,35 @@ def format_todo_item(item):
               help="file with todo items to permanently ignore (same tab-separated format as output)")
 @click.option("--dryrun/--no-dryrun", default=True, show_default=True,
               help="dryrun mode for --remove")
-def todo(remove, dryrun):
+@click.option("--upcoming", is_flag=True, default=False,
+              help="show assignments due or locking within the next 10 days")
+@click.option("--recent-past", is_flag=True, default=False,
+              help="show assignments that were due or locked in the last 10 days")
+def todo(remove, dryrun, upcoming, recent_past):
     '''list my canvas todo items (assignments to grade or submit).'''
     canvas = get_canvas_object()
+
+    if upcoming or recent_past:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        courses = get_courses(canvas, "", is_active=True)
+        found = False
+        for course in courses:
+            course_name = format_course_name(course.name)
+            assignments = list(course.get_assignments())
+            if upcoming:
+                for name, reason, dt in upcoming_assignments(assignments, now, 10):
+                    output("\t".join([course_name, reason, name, dt.strftime("%Y-%m-%d %H:%M")]))
+                    found = True
+            if recent_past:
+                start = now - datetime.timedelta(days=10)
+                for name, reason, dt in assignments_in_window(assignments, start, now):
+                    output("\t".join([course_name, reason, name, dt.strftime("%Y-%m-%d %H:%M")]))
+                    found = True
+        if not found:
+            label = "upcoming or recent" if upcoming and recent_past else "upcoming" if upcoming else "recent"
+            output(f"no {label} assignments")
+        return
+
     items = list(canvas.get_todo_items())
 
     if remove:

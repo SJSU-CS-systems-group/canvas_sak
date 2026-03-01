@@ -1,11 +1,12 @@
 """Tests for the todo command."""
 
+import datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from canvas_sak.commands.todo import parse_remove_file, todo_key
+from canvas_sak.commands.todo import assignments_in_window, parse_remove_file, todo_key, upcoming_assignments
 from canvas_sak.core import canvas_sak
 
 
@@ -145,3 +146,190 @@ class TestTodoRemove:
         assert result.exit_code == 0
         assert "0 item(s)" in result.stderr
         mock_requests.delete.assert_not_called()
+
+
+def _make_assignment(name, due_at=None, lock_at=None):
+    return SimpleNamespace(name=name, due_at=due_at, lock_at=lock_at)
+
+
+class TestUpcomingAssignments:
+    def test_due_within_window(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        assignments = [_make_assignment("HW1", due_at="2026-03-05T23:59:00Z")]
+        result = upcoming_assignments(assignments, now, 10)
+        assert len(result) == 1
+        assert result[0][0] == "HW1"
+        assert result[0][1] == "due"
+
+    def test_lock_within_window(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        assignments = [_make_assignment("HW2", lock_at="2026-03-08T07:59:00Z")]
+        result = upcoming_assignments(assignments, now, 10)
+        assert len(result) == 1
+        assert result[0][1] == "locks"
+
+    def test_due_and_lock_both_within_window(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        assignments = [_make_assignment("HW3", due_at="2026-03-05T00:00:00Z", lock_at="2026-03-08T00:00:00Z")]
+        result = upcoming_assignments(assignments, now, 10)
+        assert len(result) == 2
+        types = {r[1] for r in result}
+        assert types == {"due", "locks"}
+
+    def test_past_dates_excluded(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        assignments = [_make_assignment("Old", due_at="2026-02-20T00:00:00Z")]
+        result = upcoming_assignments(assignments, now, 10)
+        assert len(result) == 0
+
+    def test_beyond_window_excluded(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        assignments = [_make_assignment("Far", due_at="2026-04-01T00:00:00Z")]
+        result = upcoming_assignments(assignments, now, 10)
+        assert len(result) == 0
+
+    def test_no_dates_excluded(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        assignments = [_make_assignment("NoDates")]
+        result = upcoming_assignments(assignments, now, 10)
+        assert len(result) == 0
+
+    def test_sorted_by_date(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        assignments = [
+            _make_assignment("Later", due_at="2026-03-09T00:00:00Z"),
+            _make_assignment("Sooner", due_at="2026-03-03T00:00:00Z"),
+        ]
+        result = upcoming_assignments(assignments, now, 10)
+        assert result[0][0] == "Sooner"
+        assert result[1][0] == "Later"
+
+
+class TestUpcomingCommand:
+    @patch("canvas_sak.commands.todo.get_courses")
+    @patch("canvas_sak.commands.todo.get_canvas_object")
+    def test_upcoming_output(self, mock_get_canvas, mock_get_courses):
+        canvas = MagicMock()
+        mock_get_canvas.return_value = canvas
+
+        course = MagicMock()
+        course.name = "SP26: CMPE-30 Programming Concept and Meth - All Sections"
+        course.get_assignments.return_value = [
+            _make_assignment("Place Boats", due_at="2026-03-09T17:00:00Z"),
+        ]
+        mock_get_courses.return_value = [course]
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, ["todo", "--upcoming"])
+        assert result.exit_code == 0
+        assert "Place Boats" in result.output
+        assert "due" in result.output
+        assert "\t" in result.output
+
+    @patch("canvas_sak.commands.todo.get_courses")
+    @patch("canvas_sak.commands.todo.get_canvas_object")
+    def test_upcoming_empty(self, mock_get_canvas, mock_get_courses):
+        canvas = MagicMock()
+        mock_get_canvas.return_value = canvas
+
+        course = MagicMock()
+        course.name = "SP26: CMPE-30 Programming"
+        course.get_assignments.return_value = [
+            _make_assignment("Old HW", due_at="2025-01-01T00:00:00Z"),
+        ]
+        mock_get_courses.return_value = [course]
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, ["todo", "--upcoming"])
+        assert result.exit_code == 0
+        assert "no upcoming" in result.output
+
+
+class TestRecentPastAssignments:
+    def test_due_in_recent_past(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        start = now - datetime.timedelta(days=10)
+        assignments = [_make_assignment("HW1", due_at="2026-02-25T23:59:00Z")]
+        result = assignments_in_window(assignments, start, now)
+        assert len(result) == 1
+        assert result[0][0] == "HW1"
+        assert result[0][1] == "due"
+
+    def test_locked_in_recent_past(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        start = now - datetime.timedelta(days=10)
+        assignments = [_make_assignment("HW2", lock_at="2026-02-22T07:59:00Z")]
+        result = assignments_in_window(assignments, start, now)
+        assert len(result) == 1
+        assert result[0][1] == "locks"
+
+    def test_too_old_excluded(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        start = now - datetime.timedelta(days=10)
+        assignments = [_make_assignment("Ancient", due_at="2026-01-01T00:00:00Z")]
+        result = assignments_in_window(assignments, start, now)
+        assert len(result) == 0
+
+    def test_future_excluded(self):
+        now = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
+        start = now - datetime.timedelta(days=10)
+        assignments = [_make_assignment("Future", due_at="2026-03-15T00:00:00Z")]
+        result = assignments_in_window(assignments, start, now)
+        assert len(result) == 0
+
+
+class TestRecentPastCommand:
+    @patch("canvas_sak.commands.todo.get_courses")
+    @patch("canvas_sak.commands.todo.get_canvas_object")
+    def test_recent_past_output(self, mock_get_canvas, mock_get_courses):
+        canvas = MagicMock()
+        mock_get_canvas.return_value = canvas
+
+        course = MagicMock()
+        course.name = "SP26: CMPE-142 Sec 01 - Operating Systems"
+        course.get_assignments.return_value = [
+            _make_assignment("converse", due_at="2026-02-25T19:30:00Z"),
+        ]
+        mock_get_courses.return_value = [course]
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, ["todo", "--recent-past"])
+        assert result.exit_code == 0
+        assert "converse" in result.output
+        assert "due" in result.output
+
+    @patch("canvas_sak.commands.todo.get_courses")
+    @patch("canvas_sak.commands.todo.get_canvas_object")
+    def test_recent_past_empty(self, mock_get_canvas, mock_get_courses):
+        canvas = MagicMock()
+        mock_get_canvas.return_value = canvas
+
+        course = MagicMock()
+        course.name = "SP26: CMPE-30 Programming"
+        course.get_assignments.return_value = [
+            _make_assignment("Old HW", due_at="2025-01-01T00:00:00Z"),
+        ]
+        mock_get_courses.return_value = [course]
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, ["todo", "--recent-past"])
+        assert result.exit_code == 0
+        assert "no recent" in result.output
+
+    @patch("canvas_sak.commands.todo.get_courses")
+    @patch("canvas_sak.commands.todo.get_canvas_object")
+    def test_both_flags(self, mock_get_canvas, mock_get_courses):
+        canvas = MagicMock()
+        mock_get_canvas.return_value = canvas
+
+        course = MagicMock()
+        course.name = "SP26: CMPE-30 Programming"
+        course.get_assignments.return_value = [
+            _make_assignment("Old HW", due_at="2025-01-01T00:00:00Z"),
+        ]
+        mock_get_courses.return_value = [course]
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, ["todo", "--upcoming", "--recent-past"])
+        assert result.exit_code == 0
+        assert "no upcoming or recent" in result.output
