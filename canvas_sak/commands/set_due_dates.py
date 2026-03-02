@@ -133,7 +133,8 @@ def set_due_dates(course_name, dates_file, active, dryrun):
                     info(f"updating override for {raw_name}")
                     # Update existing override
                     override_id = existing_override.get('id') if isinstance(existing_override, dict) else getattr(existing_override, 'id')
-                    assignment.edit_override(override_id, assignment_override=date_entries)
+                    override = assignment.get_override(override_id)
+                    override.edit(assignment_override=date_entries)
                 else:
                     info(f"creating override for {raw_name}")
                     # Create new override
