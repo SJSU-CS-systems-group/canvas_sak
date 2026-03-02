@@ -29,5 +29,8 @@ dependencies = [
 "urllib3==1.26.16",
 ]
 
+[tool.setuptools.packages.find]
+include = ["canvas_sak*"]
+
 [project.scripts]
 canvas-sak = "canvas_sak.canvas_sak:main"
