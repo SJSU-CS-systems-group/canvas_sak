@@ -1,4 +1,5 @@
 __all__ = [
+    "announcement",
     "archive_inbox",
     "code_similarity",
     "collect_reference_info",
