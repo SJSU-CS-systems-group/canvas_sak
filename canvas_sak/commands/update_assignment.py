@@ -1,14 +1,33 @@
 from canvas_sak.core import *
 
 
-def process_assignment(assignment, update_kwargs, group_names=None):
+def process_assignment(assignment, update_kwargs, group_names=None, quizzes=None):
     """Update a single assignment and display its attributes."""
+    quiz_id = getattr(assignment, 'quiz_id', None)
+    submission_types = getattr(assignment, 'submission_types', [])
+    is_quiz = quiz_id and quizzes and 'online_quiz' in submission_types and quiz_id in quizzes
+
     if update_kwargs:
-        info(f"updating assignment '{assignment.name}' with: {update_kwargs}")
-        assignment.edit(assignment=update_kwargs)
+        # For quiz assignments, route allowed_attempts to quiz.edit()
+        quiz_kwargs = {}
+        assignment_kwargs = dict(update_kwargs)
+        if is_quiz and 'allowed_attempts' in assignment_kwargs:
+            quiz_kwargs['allowed_attempts'] = assignment_kwargs.pop('allowed_attempts')
+
+        if assignment_kwargs:
+            info(f"updating assignment '{assignment.name}' with: {assignment_kwargs}")
+            assignment.edit(assignment=assignment_kwargs)
+        if quiz_kwargs:
+            info(f"updating quiz for '{assignment.name}' with: {quiz_kwargs}")
+            quizzes[quiz_id] = quizzes[quiz_id].edit(quiz=quiz_kwargs)
         output("assignment updated successfully")
     else:
         info(f"no changes specified for '{assignment.name}', showing current settings")
+
+    # For quiz assignments, use the quiz's allowed_attempts (assignment value is unreliable)
+    allowed_attempts = getattr(assignment, 'allowed_attempts', 'N/A')
+    if is_quiz:
+        allowed_attempts = getattr(quizzes[quiz_id], 'allowed_attempts', allowed_attempts)
 
     # Display assignment attributes
     output("")
@@ -17,7 +36,7 @@ def process_assignment(assignment, update_kwargs, group_names=None):
     output(f"  Submission Types: {getattr(assignment, 'submission_types', 'N/A')}")
     output(f"  Grading Type: {getattr(assignment, 'grading_type', 'N/A')}")
     output(f"  Published: {getattr(assignment, 'published', 'N/A')}")
-    output(f"  Allowed Attempts: {getattr(assignment, 'allowed_attempts', 'N/A')}")
+    output(f"  Allowed Attempts: {allowed_attempts}")
     output(f"  Allowed Extensions: {getattr(assignment, 'allowed_extensions', 'N/A')}")
     output(f"  Omit From Final Grade: {getattr(assignment, 'omit_from_final_grade', 'N/A')}")
     output(f"  Peer Reviews: {getattr(assignment, 'peer_reviews', 'N/A')}")
@@ -181,7 +200,12 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
     if peer_reviews is not None:
         update_kwargs['peer_reviews'] = peer_reviews
 
+    # Fetch quizzes for quiz-type assignments (assignment allowed_attempts is unreliable)
+    quizzes = {}
+    if any('online_quiz' in getattr(a, 'submission_types', []) for a in assignments):
+        quizzes = {q.id: q for q in course.get_quizzes()}
+
     # Process assignments
     info(f"processing {len(assignments)} assignment(s)")
     for assignment in assignments:
-        process_assignment(assignment, update_kwargs, group_names)
+        process_assignment(assignment, update_kwargs, group_names, quizzes)
