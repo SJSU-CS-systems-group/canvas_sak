@@ -8,6 +8,7 @@ __all__ = [
     "download_submissions",
     "export_letter_grade",
     "grade_discussion",
+    "grade_submission",
     "help_me_setup",
     "list_courses",
     "list_due_dates",
