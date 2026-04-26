@@ -186,6 +186,65 @@ class TestProcessAssignmentQuizUpdate:
         assert "Allowed Attempts: -1" in captured.out
 
 
+class TestDescriptionOption:
+    """--description TEXT should pass the description through to Canvas on update and create."""
+
+    @patch('canvas_sak.commands.update_assignment.get_canvas_object')
+    @patch('canvas_sak.commands.update_assignment.get_course')
+    def test_update_passes_description(self, mock_get_course, mock_get_canvas):
+        """When --description is given on an existing assignment, assignment.edit() should receive it."""
+        course = MagicMock()
+        course.name = "CS249"
+        existing = make_assignment("Homework 1")
+        course.get_assignments.return_value = [existing]
+        course.get_assignment_groups.return_value = [
+            SimpleNamespace(id=1, name="Homework"),
+        ]
+
+        mock_get_canvas.return_value = MagicMock()
+        mock_get_course.return_value = course
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, [
+            'update-assignment', '30', 'Homework 1',
+            '--description', '<p>Read chapter 3</p>',
+        ])
+
+        assert result.exit_code == 0, result.output
+        existing.edit.assert_called_once_with(
+            assignment={'description': '<p>Read chapter 3</p>'}
+        )
+
+    @patch('canvas_sak.commands.update_assignment.get_canvas_object')
+    @patch('canvas_sak.commands.update_assignment.get_course')
+    def test_create_passes_description(self, mock_get_course, mock_get_canvas):
+        """When --create and --description are both given, the create call must include description."""
+        course = MagicMock()
+        course.name = "CS249"
+        course.get_assignments.return_value = []
+        course.get_assignment_groups.return_value = [
+            SimpleNamespace(id=10, name="Assignments"),
+        ]
+
+        created = make_assignment("ASSIGNMENT", assignment_group_id=10)
+        course.create_assignment.return_value = created
+
+        mock_get_canvas.return_value = MagicMock()
+        mock_get_course.return_value = course
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, [
+            'update-assignment', '30', 'ASSIGNMENT',
+            '--create',
+            '--description', '<p>New assignment instructions</p>',
+        ])
+
+        assert result.exit_code == 0, result.output
+        course.create_assignment.assert_called_once()
+        create_kwargs = course.create_assignment.call_args.kwargs['assignment']
+        assert create_kwargs.get('description') == '<p>New assignment instructions</p>'
+
+
 class TestCreateWithAssignmentGroup:
     """Bug: --create with --assignment-group ignores the group, putting the new
     assignment in whatever Canvas defaults to (often the first group) instead

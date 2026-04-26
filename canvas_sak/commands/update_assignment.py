@@ -74,9 +74,12 @@ def process_assignment(assignment, update_kwargs, group_names=None, quizzes=None
               help="Enable or disable peer reviews")
 @click.option('--assignment-group', default=None,
               help="Only process assignments whose assignment group name contains this substring")
+@click.option('--description', default=None,
+              help="Assignment description (HTML supported)")
 def update_assignment(course_name, assignment_name, active, process_all, create, points,
                       published, submission_types, grading_type, attempts,
-                      allowed_extensions, omit_from_final_grade, peer_reviews, assignment_group):
+                      allowed_extensions, omit_from_final_grade, peer_reviews, assignment_group,
+                      description):
     """Update assignment settings and display the resulting attributes.
 
     Examples:
@@ -163,6 +166,9 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
             if peer_reviews is not None:
                 create_kwargs['peer_reviews'] = peer_reviews
 
+            if description is not None:
+                create_kwargs['description'] = description
+
             assignment = course.create_assignment(assignment=create_kwargs)
             output("assignment created successfully")
             process_assignment(assignment, {}, group_names)  # Display attributes, no further updates needed
@@ -207,6 +213,9 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
 
     if peer_reviews is not None:
         update_kwargs['peer_reviews'] = peer_reviews
+
+    if description is not None:
+        update_kwargs['description'] = description
 
     # Fetch quizzes for quiz-type assignments (assignment allowed_attempts is unreliable)
     quizzes = {}
