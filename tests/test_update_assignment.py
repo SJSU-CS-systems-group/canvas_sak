@@ -1,9 +1,12 @@
 """Tests for update_assignment command."""
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+from click.testing import CliRunner
 
 from canvas_sak.commands.update_assignment import process_assignment
+from canvas_sak.core import canvas_sak
 
 
 def make_assignment(name, allowed_attempts=-1, submission_types=None, quiz_id=None,
@@ -181,3 +184,77 @@ class TestProcessAssignmentQuizUpdate:
 
         captured = capsys.readouterr()
         assert "Allowed Attempts: -1" in captured.out
+
+
+class TestCreateWithAssignmentGroup:
+    """Bug: --create with --assignment-group ignores the group, putting the new
+    assignment in whatever Canvas defaults to (often the first group) instead
+    of the matching group the user requested."""
+
+    @patch('canvas_sak.commands.update_assignment.get_canvas_object')
+    @patch('canvas_sak.commands.update_assignment.get_course')
+    def test_create_passes_assignment_group_id(self, mock_get_course, mock_get_canvas):
+        """When --create and --assignment-group are both given, the create call
+        must include assignment_group_id matching the requested group."""
+        course = MagicMock()
+        course.name = "CS249"
+        course.get_assignments.return_value = []
+
+        assignments_group = SimpleNamespace(id=10, name="Assignments")
+        chapter_quizzes_group = SimpleNamespace(id=20, name="Chapter Quizzes")
+        course.get_assignment_groups.return_value = [
+            chapter_quizzes_group,
+            assignments_group,
+        ]
+
+        created = make_assignment("ASSIGNMENT", assignment_group_id=10)
+        course.create_assignment.return_value = created
+
+        mock_get_canvas.return_value = MagicMock()
+        mock_get_course.return_value = course
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, [
+            'update-assignment', '30', 'ASSIGNMENT',
+            '--create',
+            '--grading-type', 'percent',
+            '--submission-types', 'none',
+            '--assignment-group', 'Assignments',
+        ])
+
+        assert result.exit_code == 0, result.output
+        course.create_assignment.assert_called_once()
+        create_kwargs = course.create_assignment.call_args.kwargs['assignment']
+        assert create_kwargs.get('assignment_group_id') == 10, (
+            f"expected assignment_group_id=10 (Assignments), got {create_kwargs}"
+        )
+
+    @patch('canvas_sak.commands.update_assignment.get_canvas_object')
+    @patch('canvas_sak.commands.update_assignment.get_course')
+    def test_create_without_assignment_group_omits_group_id(self, mock_get_course,
+                                                             mock_get_canvas):
+        """Without --assignment-group, the create call should not specify a group."""
+        course = MagicMock()
+        course.name = "CS249"
+        course.get_assignments.return_value = []
+        course.get_assignment_groups.return_value = [
+            SimpleNamespace(id=10, name="Assignments"),
+        ]
+
+        created = make_assignment("ASSIGNMENT", assignment_group_id=10)
+        course.create_assignment.return_value = created
+
+        mock_get_canvas.return_value = MagicMock()
+        mock_get_course.return_value = course
+
+        runner = CliRunner()
+        result = runner.invoke(canvas_sak, [
+            'update-assignment', '30', 'ASSIGNMENT',
+            '--create',
+            '--points', '50',
+        ])
+
+        assert result.exit_code == 0, result.output
+        course.create_assignment.assert_called_once()
+        create_kwargs = course.create_assignment.call_args.kwargs['assignment']
+        assert 'assignment_group_id' not in create_kwargs

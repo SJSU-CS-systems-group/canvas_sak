@@ -104,6 +104,7 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
     group_names = {g.id: g.name for g in course.get_assignment_groups()}
 
     # Filter by assignment group if specified
+    matching_group_ids = set()
     if assignment_group is not None:
         groups = group_names
         matching_group_ids = {gid for gid, name in groups.items() if assignment_group in name}
@@ -130,6 +131,13 @@ def update_assignment(course_name, assignment_name, active, process_all, create,
             info(f"no assignments matched '{assignment_name}', creating new assignment")
             # Build create kwargs (same as update_kwargs, but include name)
             create_kwargs = {'name': assignment_name}
+
+            if assignment_group is not None:
+                if len(matching_group_ids) > 1:
+                    error(f"--create with --assignment-group requires exactly one matching group, got: "
+                          f"{[group_names[gid] for gid in matching_group_ids]}")
+                    sys.exit(2)
+                create_kwargs['assignment_group_id'] = next(iter(matching_group_ids))
 
             if points is not None:
                 create_kwargs['points_possible'] = points
