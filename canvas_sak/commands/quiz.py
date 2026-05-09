@@ -98,11 +98,15 @@ def quiz(course_name, quiz_name, show_question, for_student, summarize, final_an
     for s in quiz.get_submissions():
         if s.user_id not in users:
             continue
-        prev = None
+        started_at = getattr(s, 'started_at_date', None)
         for es in s.get_submission_events():
-            time_spent = int(s.time_spent)
             if es.event_type != 'question_answered':
                 continue
+            if started_at is not None and getattr(es, 'created_at_date', None) is not None:
+                elapsed = int((es.created_at_date - started_at).total_seconds())
+                elapsed = max(elapsed, 0)
+            else:
+                elapsed = 0
             event_data = es.event_data
             if not type(event_data) is list:
                 event_data = [event_data]
@@ -113,7 +117,7 @@ def quiz(course_name, quiz_name, show_question, for_student, summarize, final_an
                         position = f"{get_question_group(quiz, question_groups, question.quiz_group_id).position:2}.{question.position:2}"
                     else:
                         position = f"{question.position:5}"
-                    data = (users[s.user_id], position, f"{time_spent//60:02}:{time_spent%60:02}", dehtml(e['answer']), question.question_text)
+                    data = (users[s.user_id], position, f"{elapsed//60:02}:{elapsed%60:02}", dehtml(e['answer']), question.question_text)
                     answers.append(data)
 
     if summarize or final_answer:

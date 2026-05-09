@@ -15,7 +15,7 @@ def archive_inbox(course_substring, dryrun):
     move inbox conversations for a course to the archive.
     the course can be a partial name or * for all courses.
     '''
-    recent_past = datetime.datetime.now() - datetime.timedelta(minutes=60)
+    recent_past = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=60)
     canvas_recent_past = recent_past.strftime('%Y-%m-%dT%H:%M:%SZ')
     canvas = get_canvas_object()
     to_archive = []
@@ -29,7 +29,7 @@ def archive_inbox(course_substring, dryrun):
 
         if c.context_name and (course_substring == '*' or course_substring in c.context_name.lower()):
             archive_count += 1
-            to_archive = to_archive + [c.id]
+            to_archive.append(c.id)
             archive_contexts.add(c.context_name)
         else:
             skipped_count += 1
@@ -42,7 +42,7 @@ def archive_inbox(course_substring, dryrun):
     for context in sorted_contexts:
         click.echo(context)
     if dryrun:
-        click.echo("this was a dry run, so no conversations were archived")
+        dryrun_warn()
     else:
         if to_archive:
             click.echo(f"archiving {len(to_archive)} conversations")

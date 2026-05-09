@@ -327,7 +327,7 @@ def derive_assignment_score(course, target_assignment, formula, dryrun, use_last
             parts = ' '.join(f"{var}={scores[var]:.2f}" for var in sorted(scores))
             comment = build_change_score_comment(previous_score, score)
             info(f"  {user_name}: {score:.2f} [{parts}] ({comment})")
-        warn("This was a dryrun. Nothing has been updated")
+        dryrun_warn()
     else:
         with click.progressbar(length=len(computed_scores), label="updating grades", show_pos=True) as bar:
             for submission, (user_name, score, previous_score, _scores) in computed_scores.items():

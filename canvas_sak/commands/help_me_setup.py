@@ -14,9 +14,10 @@ it should have the form:""")
     parser = ConfigParser()
     try:
         parser.read([config_ini])
-    except:
-        error(f"there was a problem reading {config_ini}. make sure it has the format of:")
+    except Exception as e:
+        error(f"there was a problem reading {config_ini}: {e}. make sure it has the format of:")
         print_config_ini_format(False)
+        sys.exit(2)
 
     check_key("SERVER", parser)
     url = check_key("url", parser["SERVER"])

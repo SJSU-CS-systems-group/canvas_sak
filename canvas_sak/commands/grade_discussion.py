@@ -58,7 +58,7 @@ def grade_discussion(course_name, assignment_name, dryrun, min_words, points_com
                     info(
                         f"skipping discussion from {s.user_id} submitted at {entry.created_at_date} but due {due_at_date}")
                     continue
-                if count_words(entry.message) > 5:
+                if count_words(entry.message) > min_words:
                     grade = min(grade + points_comment, max_points)
 
             grades[s] = grade

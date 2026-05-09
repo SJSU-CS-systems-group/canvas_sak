@@ -48,15 +48,11 @@ def grade_submission(course_name, assignment_name, canvasid, sisid, grade, messa
     assignment = get_assignment(course, assignment_name)
 
     if sisid:
-        canvas_user_id = None
-        for enrollment in course.get_enrollments(include=["user", "sis_user_id"]):
-            if enrollment.sis_user_id == sisid:
-                canvas_user_id = enrollment.user['id']
-                break
-        if canvas_user_id is None:
+        _, sis_to_user_id = build_sis_maps(course)
+        if sisid not in sis_to_user_id:
             error(f"no student found with SIS ID {sisid}")
             sys.exit(2)
-        student_id = canvas_user_id
+        student_id = sis_to_user_id[sisid]
     else:
         student_id = canvasid
 

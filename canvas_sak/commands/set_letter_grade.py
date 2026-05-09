@@ -18,9 +18,6 @@ def set_letter_grade(course, round, dryrun, skip_mismatch):
     course = get_course(canvas, course)
 
     rlg_assignment = get_assignment(course, "Reported Letter Grade")
-    if not rlg_assignment:
-        error('the "Reported Letter Grade" assignment hasn\'t been set up')
-        exit(2)
 
     user_to_grade = {}
     for enrollment in course.get_enrollments(include=['grades']):
@@ -42,7 +39,7 @@ def set_letter_grade(course, round, dryrun, skip_mismatch):
             if submission.user_id in user_to_grade:
                 (user, letter, score) = user_to_grade[submission.user_id]
                 info(f"{letter} {score} {user['name']}")
-        warn("This was a dryrun. Nothing has been updated")
+        dryrun_warn()
     else:
         with click.progressbar(length=len(user_to_grade), label="updating grades", show_pos=True) as bar:
             for submission in rlg_assignment.get_submissions():

@@ -35,7 +35,7 @@ def download_modules(course, target, dryrun):
 
     top_modules = []
     id2name = {}
-    output = ''
+    rendered = ''
     for module in course.get_modules():
         id2name[module.id] = module.name
         ms = f"# {module.name}"
@@ -49,18 +49,18 @@ def download_modules(course, target, dryrun):
             ms += f"; completed={module.completed_at}"
         if not module.published:
             ms += f"; published=False"
-        output += ms + '\n'
+        rendered += ms + '\n'
         for item in module.get_module_items():
             if item.type in module_renderers:
-                output += module_renderers[item.type](item) + '\n'
+                rendered += module_renderers[item.type](item) + '\n'
             else:
                 warn(f"cannot render {item.__dict__}")
 
     if dryrun:
-        info(f"would have written:\n{output}to {target}")
+        info(f"would have written:\n{rendered}to {target}")
     else:
         with open(ensure_dirs(target), "w") as fd:
-            fd.write(output)
+            fd.write(rendered)
 
 
 def ensure_dirs(target):

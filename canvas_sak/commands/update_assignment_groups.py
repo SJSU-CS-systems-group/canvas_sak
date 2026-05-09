@@ -178,5 +178,4 @@ def update_assignment_groups(course_name, groups_file, active, dryrun):
                     assignment.edit(assignment={'assignment_group_id': target_group_id})
 
     if dryrun:
-        output("")
-        output("(dry run - use --no-dryrun to apply changes)")
+        dryrun_warn()

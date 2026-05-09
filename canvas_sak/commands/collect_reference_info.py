@@ -37,7 +37,7 @@ def collect_reference_info(course, thresholds, skip):
                     pluses = to_plus(score, thresholds)
                     if pluses:
                         grades_by_student[name].append(Grade(category, pluses))
-        for i in grades_by_student.items():
+        for i in sorted(grades_by_student.items()):
             label = f'{i[0]}@{format_course_name(course.name)}'
             output(f'{label} {" ".join([g.category + ":" + g.grade for g in i[1]])}')
 

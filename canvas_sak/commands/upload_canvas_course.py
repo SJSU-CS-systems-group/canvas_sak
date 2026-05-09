@@ -147,7 +147,7 @@ def page_name_to_url(item_name):
 
 def extract_options(options):
     return {s[0].strip().lower(): s[1].strip() if len(s) > 1 else "" for s in
-            [o.split('=', 2) for o in options.split(';')]}
+            [o.split('=', 1) for o in options.split(';')]}
 
 
 DISCUSSION_KEYWORDS = set(["title", "published", "publish_at"])
@@ -175,7 +175,7 @@ def parse_headers(content, keywords):
 
 
 def upload_discussions(course, source, dryrun, force):
-    all_files = [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs]
+    all_files = list(walk_relative_files(source))
     to_upload = set(filter_ignored_paths(all_files))
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
@@ -194,7 +194,6 @@ def upload_discussions(course, source, dryrun, force):
                     info(f"would update {dict['title']} from {file}")
                 else:
                     info(f"updating {dict['title']} from {file}")
-                    dict['title'] = dict['title'] + "blah"
                     dt = course.get_discussion_topic(rr4name[rrkey].id)
                     rc = dt.update(**dict)
             else:
@@ -215,7 +214,7 @@ PAGE_KEYWORDS = set(["title", "published", "publish_at", "front_page"])
 
 def upload_pages(course, source, dryrun, force):
     # got to watch out for windows \\ when using join!
-    all_files = [os.path.join(d, f)[len(source) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(source) for f in fs]
+    all_files = list(walk_relative_files(source))
     to_upload = set(filter_ignored_paths(all_files))
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
@@ -233,7 +232,6 @@ def upload_pages(course, source, dryrun, force):
                     info(f"would update {dict['title']} from {file}")
                 else:
                     info(f"updating {dict['title']} from {file}")
-                    dict['title'] = dict['title'] + "blah"
                     p: Page = course.get_page(rr4name[rrkey].url)
                     rc = p.edit(**dict)
             else:
@@ -247,7 +245,7 @@ def upload_pages(course, source, dryrun, force):
 
 def upload_files(course, target, dryrun):
     # got to watch out for windows \\ when using join!
-    all_files = [os.path.join(d, f)[len(target) + 1:].replace("\\", "/") for (d, sds, fs) in os.walk(target) for f in fs]
+    all_files = list(walk_relative_files(target))
     to_upload = set(filter_ignored_paths(all_files))
 
     existing_files = set()

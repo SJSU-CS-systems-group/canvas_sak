@@ -166,7 +166,7 @@ def rubrics(course, active, update_file, dryrun):
                         warn(f"  Failed to associate {display_name}: {e}")
 
         if dryrun:
-            warn("This was a dryrun. Nothing has been updated.")
+            dryrun_warn()
         return
 
     # List mode: show rubrics and associations

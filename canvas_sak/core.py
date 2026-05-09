@@ -200,6 +200,37 @@ def output(message):
     click.echo(message)
 
 
+def dryrun_warn():
+    """Standard trailing banner for commands that ran in dryrun mode."""
+    warn("This was a dryrun. Nothing has been updated.")
+
+
+def build_sis_maps(course):
+    """Return (user_id_to_sis, sis_to_user_id) for a course.
+
+    Both directions are commonly needed; computing them together avoids
+    repeating the get_enrollments call.
+    """
+    user_id_to_sis = {}
+    sis_to_user_id = {}
+    for enrollment in course.get_enrollments(include=["user", "sis_user_id"]):
+        user_id = enrollment.user['id']
+        sis = enrollment.sis_user_id
+        user_id_to_sis[user_id] = sis
+        if sis:
+            sis_to_user_id[sis] = user_id
+    return user_id_to_sis, sis_to_user_id
+
+
+def walk_relative_files(source):
+    """Yield forward-slashed paths relative to ``source`` for every file under it."""
+    for d, _subdirs, files in os.walk(source):
+        for f in files:
+            full = os.path.join(d, f)
+            rel = full[len(source) + 1:].replace("\\", "/")
+            yield rel
+
+
 @functools.lru_cache
 def get_requester():
     parser = ConfigParser()
@@ -235,8 +266,8 @@ def get_canvas_object():
         access_token = parser['SERVER']['token']
         canvas_url = parser['SERVER']['url']
         return canvas
-    except:
-        error(f"there was a problem accessing canvas. try using help-me-setup.")
+    except Exception as e:
+        error(f"there was a problem accessing canvas: {e}. try using help-me-setup.")
         sys.exit(2)
 
 
@@ -439,7 +470,7 @@ def to_letter_grade(score):
     return 'F'
 
 def points_to_letter(points, round):
-    if not points:
+    if points is None:
         return 'WU'
     points += round
     for letter in letter_grades:

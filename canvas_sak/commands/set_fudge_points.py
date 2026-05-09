@@ -3,7 +3,7 @@ from canvas_sak.core import *
 @canvas_sak.command()
 @click.argument('course_name')
 @click.argument('quiz_name', default='')
-@click.argument('points', default=-666, type=float)
+@click.argument('points', default=None, type=float, required=False)
 @click.option('--dryrun/--no-dryrun', default=True, show_default=True,
               help="only show the grade, don't actually set it")
 @click.option('--decrease/--no-decrease', default=False, show_default=True,
@@ -33,7 +33,7 @@ def set_fudge_points(course_name, quiz_name, points, dryrun, decrease):
         error(f"multiple matches for {quiz_name}: {', '.join([q.title for q in selected_quizzes])}")
     else:
         for s in selected_quizzes[0].get_submissions():
-            if points == -666:
+            if points is None:
                 info(f"{s.user_id} {s.fudge_points}")
             else:
                 if not decrease and s.fudge_points > points:

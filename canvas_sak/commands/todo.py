@@ -119,7 +119,7 @@ def todo(remove, dryrun, upcoming, recent_past):
                 removed += 1
         info(f"{removed} item(s) {'would be ' if dryrun else ''}removed")
         if dryrun and removed > 0:
-            warn("this was a dryrun. use --no-dryrun to apply")
+            dryrun_warn()
         return
 
     if not items:

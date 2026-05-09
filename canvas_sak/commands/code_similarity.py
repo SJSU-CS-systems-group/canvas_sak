@@ -39,7 +39,7 @@ def code_similarity(course_name, language, assignment_name, dryrun, pause, multi
                     if sub.user_id not in usermap:
                         continue
                     udir = f"{tempdir}/{usermap[sub.user_id]}"
-                    os.makedirs(udir)
+                    os.makedirs(udir, exist_ok=True)
                     bar.update(1, usermap[sub.user_id])
                     for attachment in sub.attachments:
                         aname = f"{udir}/{attachment.filename}"

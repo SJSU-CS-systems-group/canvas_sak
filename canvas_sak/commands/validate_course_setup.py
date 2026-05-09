@@ -283,11 +283,14 @@ def check_external_link(url, timeout, cache, canvas_domain=None, token=None):
             headers['Authorization'] = f'Bearer {token}'
 
     try:
-        resp = requests.head(url, timeout=timeout, allow_redirects=True, headers=headers)
-        if resp.status_code == 405:
-            resp = requests.get(url, timeout=timeout, allow_redirects=True, stream=True, headers=headers)
-        ok = resp.status_code < 400
-        msg = None if ok else f"HTTP {resp.status_code}"
+        with requests.head(url, timeout=timeout, allow_redirects=True, headers=headers) as resp:
+            if resp.status_code == 405:
+                with requests.get(url, timeout=timeout, allow_redirects=True, stream=True, headers=headers) as resp:
+                    ok = resp.status_code < 400
+                    msg = None if ok else f"HTTP {resp.status_code}"
+            else:
+                ok = resp.status_code < 400
+                msg = None if ok else f"HTTP {resp.status_code}"
     except requests.ConnectionError:
         ok, msg = False, "connection failed"
     except requests.Timeout:

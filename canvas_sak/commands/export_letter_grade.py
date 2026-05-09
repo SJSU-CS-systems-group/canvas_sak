@@ -17,16 +17,15 @@ def export_letter_grade(course, csv_output_file):
     course = get_course(canvas, course)
 
     rlg_assignment = get_assignment(course, "Reported Letter Grade")
-    if not rlg_assignment:
-        error('the "Reported Letter Grade" assignment hasn\'t been set up')
-        exit(2)
+
+    user_id_to_sis, _ = build_sis_maps(course)
 
     count = 0
     csv_output_file.write("Student ID,Grade\n")
     for submission in rlg_assignment.get_submissions():
-        user = course.get_user(submission.user_id)
-        if user.sis_user_id:
-            csv_output_file.write(f"{user.sis_user_id}, {submission.grade}\n")
+        sis = user_id_to_sis.get(submission.user_id)
+        if sis:
+            csv_output_file.write(f"{sis}, {submission.grade}\n")
             count += 1
 
     info(f"{count} records written to {csv_output_file.name}")

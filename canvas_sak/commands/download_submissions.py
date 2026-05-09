@@ -36,7 +36,7 @@ def download_submissions(course_name, assignment_name, dryrun):
         for s in submissions:
             count = 1
             name = s['user']['name']
-            dir = os.path.join(assignment_name, name.replace(' ', '-'))
+            dir = os.path.join(assignment.name, name.replace(' ', '-'))
             os.makedirs(dir, exist_ok=True)
             for a in s['attachments']:
                 download_attachment(f'{dir}/submission{count}', a)

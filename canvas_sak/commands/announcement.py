@@ -92,8 +92,8 @@ def list_announcements(course_name, comments, contents, since, on_date):
                     author = getattr(entry, 'user_name', 'unknown')
                     message = getattr(entry, 'message', '')
                     output(f"  {author}: {message}")
-            except Exception:
-                pass
+            except Exception as e:
+                warn(f"  (failed to fetch comments for '{topic.title}': {e})")
 
     if not found:
         output("no announcements found")
