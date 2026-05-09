@@ -2,6 +2,18 @@ import re
 from canvas_sak.core import *
 
 
+def filter_assignment_associations(associations):
+    """Return rubric associations that link to an assignment.
+
+    Canvas returns a rubric's associations with use_for_grading sometimes
+    False even when the rubric is attached to the assignment for grading,
+    so we list every Assignment-typed association rather than filter on
+    use_for_grading.
+    """
+    return [assoc for assoc in associations
+            if assoc.get('association_type') == 'Assignment']
+
+
 def parse_rubrics_file(file):
     """Parse a rubrics file and return a list of (rubric_name, [assignment_name, ...])"""
     rubrics = []
@@ -176,9 +188,7 @@ def rubrics(course, active, update_file, dryrun):
             detailed_rubric = course.get_rubric(rubric_id, include=['assignment_associations'])
             associations = getattr(detailed_rubric, 'associations', [])
 
-            grading_assocs = [assoc for assoc in associations
-                              if assoc.get('association_type') == 'Assignment'
-                              and assoc.get('use_for_grading', False)]
+            grading_assocs = filter_assignment_associations(associations)
             if grading_assocs:
                 for assoc in grading_assocs:
                     assoc_id = assoc.get('association_id')
