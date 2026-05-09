@@ -12,6 +12,7 @@ __all__ = [
     "help_me_setup",
     "list_courses",
     "list_due_dates",
+    "list_grades",
     "list_students",
     "message_students",
     "min_grade_analyzer",
