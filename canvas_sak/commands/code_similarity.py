@@ -38,11 +38,11 @@ def code_similarity(course_name, language, assignment_name, dryrun, pause, multi
                 for sub in assignment.get_submissions():
                     if sub.user_id not in usermap:
                         continue
-                    udir = f"{tempdir}/{usermap[sub.user_id]}"
+                    udir = f"{tempdir}/{despace(usermap[sub.user_id])}"
                     os.makedirs(udir, exist_ok=True)
                     bar.update(1, usermap[sub.user_id])
                     for attachment in sub.attachments:
-                        aname = f"{udir}/{attachment.filename}"
+                        aname = f"{udir}/{despace(attachment.filename)}"
                         with open(aname, "wb") as f:
                             f.write(requests.get(attachment.url).content)
                         if aname.endswith(".zip"):

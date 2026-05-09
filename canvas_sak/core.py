@@ -410,6 +410,12 @@ def sanitize(name):
     return name.replace(';', ',').replace("\n", "\\n").replace("\t", "\\t")
 
 
+# replace every whitespace character with an underscore so the result is safe to use
+# as a path component on any filesystem / shell without quoting
+def despace(name):
+    return re.sub(r"\s", "_", name)
+
+
 ResourceRecord = namedtuple("ResourceRecord", ["id", "url", "type", "name", "stub"])
 
 # rr4name and rr4id will have the ResourceRecord type prepended

@@ -71,7 +71,7 @@ def download_discussions(course, target, dryrun):
     os.makedirs(target, exist_ok=True)
     for discussion in course.get_discussion_topics():
         # windows can't have : in the filename :'(
-        target_file = os.path.join(target, discussion.title.strip().replace("\\", "-").replace(":", ";") + ".md")
+        target_file = os.path.join(target, despace(discussion.title.strip().replace("\\", "-").replace(":", ";")) + ".md")
         if os.path.exists(target_file):
             info(f"{target_file} already exists for {discussion.title}")
         else:
@@ -121,7 +121,7 @@ def download_files(course, target, dryrun):
     error_seen = False
     to_download = []
     for folder in course.get_folders():
-        target_dir = os.path.join(target, str(folder))
+        target_dir = os.path.join(target, despace(str(folder)))
         if os.path.exists(target_dir):
             if not os.path.isdir(target_dir):
                 error(f"{target_dir} is not a directory. skipping")
@@ -135,7 +135,7 @@ def download_files(course, target, dryrun):
 
         for file in folder.get_files():
             full_name = os.path.join(str(folder), str(file))
-            target_file = os.path.join(target_dir, str(file))
+            target_file = os.path.join(target_dir, despace(str(file)))
             if dryrun:
                 info(f"would download {full_name} to {target_file}")
             else:
