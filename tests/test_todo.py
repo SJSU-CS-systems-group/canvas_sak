@@ -96,7 +96,7 @@ class TestTodoRemove:
         todo_item = _make_todo_item("grading", "Homework 1", "SP26: CS-149 Sec 01 - Operating Systems", needs_grading_count=5)
         canvas.get_todo_items.return_value = [todo_item]
 
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         with runner.isolated_filesystem():
             with open("remove.txt", "w") as f:
                 f.write("SP26:CS-149\tgrading\tHomework 1\n")
@@ -118,7 +118,7 @@ class TestTodoRemove:
         todo_item = _make_todo_item("grading", "Homework 1", "SP26: CS-149 Sec 01 - Operating Systems", needs_grading_count=5)
         canvas.get_todo_items.return_value = [todo_item]
 
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         with runner.isolated_filesystem():
             with open("remove.txt", "w") as f:
                 f.write("SP26:CS-149\tgrading\tHomework 1\n")
@@ -137,7 +137,7 @@ class TestTodoRemove:
         todo_item = _make_todo_item("grading", "Homework 1", "SP26: CS-149 Sec 01 - Operating Systems", needs_grading_count=5)
         canvas.get_todo_items.return_value = [todo_item]
 
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         with runner.isolated_filesystem():
             with open("remove.txt", "w") as f:
                 f.write("CS999:Fake\tgrading\tNonexistent\n")
@@ -150,6 +150,14 @@ class TestTodoRemove:
 
 def _make_assignment(name, due_at=None, lock_at=None):
     return SimpleNamespace(name=name, due_at=due_at, lock_at=lock_at)
+
+
+def _iso_offset_from_now(*, days):
+    """Build a Canvas-style ISO timestamp offset from the actual current time
+    by the given number of days. Used by CLI tests so fixtures stay inside
+    the command's now-relative windows regardless of when the suite runs."""
+    dt = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class TestUpcomingAssignments:
@@ -215,7 +223,7 @@ class TestUpcomingCommand:
         course = MagicMock()
         course.name = "SP26: CMPE-30 Programming Concept and Meth - All Sections"
         course.get_assignments.return_value = [
-            _make_assignment("Place Boats", due_at="2026-03-09T17:00:00Z"),
+            _make_assignment("Place Boats", due_at=_iso_offset_from_now(days=3)),
         ]
         mock_get_courses.return_value = [course]
 
@@ -288,7 +296,7 @@ class TestRecentPastCommand:
         course = MagicMock()
         course.name = "SP26: CMPE-142 Sec 01 - Operating Systems"
         course.get_assignments.return_value = [
-            _make_assignment("converse", due_at="2026-02-25T19:30:00Z"),
+            _make_assignment("converse", due_at=_iso_offset_from_now(days=-3)),
         ]
         mock_get_courses.return_value = [course]
 
@@ -344,8 +352,8 @@ class TestRecentPastCommand:
         course = MagicMock()
         course.name = "SP26: CMPE-30 Programming"
         course.get_assignments.return_value = [
-            _make_assignment("Past HW", due_at="2026-02-25T00:00:00Z"),
-            _make_assignment("Future HW", due_at="2026-03-05T00:00:00Z"),
+            _make_assignment("Past HW", due_at=_iso_offset_from_now(days=-3)),
+            _make_assignment("Future HW", due_at=_iso_offset_from_now(days=3)),
         ]
         mock_get_courses.return_value = [course]
 
