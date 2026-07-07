@@ -258,7 +258,7 @@ class TestDeletePrevious:
         assignment.get_submission.return_value = submission
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'New feedback',
@@ -296,7 +296,7 @@ class TestDeletePrevious:
         assignment.get_submission.return_value = submission
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'New feedback',
@@ -333,7 +333,7 @@ class TestDeletePrevious:
         assignment.get_submission.return_value = submission
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '-1', '--message', 'Regrade',
@@ -368,7 +368,7 @@ class TestDeletePrevious:
         assignment.get_submission.return_value = submission
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Feedback',
@@ -398,7 +398,7 @@ class TestShowPreviousGrade:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Good work'
@@ -424,7 +424,7 @@ class TestShowPreviousGrade:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Good work',
@@ -450,7 +450,7 @@ class TestShowPreviousGrade:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '85', '--message', 'Regrade'
@@ -475,7 +475,7 @@ class TestShowPreviousGrade:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Same'
@@ -500,7 +500,7 @@ class TestShowPreviousGrade:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Good'
@@ -527,7 +527,7 @@ class TestShowPreviousGrade:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '-1', '--message', 'Clearing'
@@ -554,7 +554,7 @@ class TestShowPreviousGrade:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Good work'
@@ -584,7 +584,7 @@ class TestOnlyChanges:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Good',
@@ -611,7 +611,7 @@ class TestOnlyChanges:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Good',
@@ -639,7 +639,7 @@ class TestOnlyChanges:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Updated',
@@ -666,7 +666,7 @@ class TestOnlyChanges:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'First grade',
@@ -694,7 +694,7 @@ class TestOnlyChanges:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(canvas_sak, [
             'grade-submission', 'CS249', 'Homework',
             '--canvasid', '42', '--grade', '95', '--message', 'Good',
@@ -757,7 +757,7 @@ class TestGradeSubmissionAttachment:
         mock_get_course.return_value = course
         mock_get_assignment.return_value = assignment
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         with runner.isolated_filesystem():
             with open('feedback.pdf', 'w') as f:
                 f.write('fake pdf content')

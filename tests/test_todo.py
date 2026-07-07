@@ -96,7 +96,7 @@ class TestTodoRemove:
         todo_item = _make_todo_item("grading", "Homework 1", "SP26: CS-149 Sec 01 - Operating Systems", needs_grading_count=5)
         canvas.get_todo_items.return_value = [todo_item]
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         with runner.isolated_filesystem():
             with open("remove.txt", "w") as f:
                 f.write("SP26:CS-149\tgrading\tHomework 1\n")
@@ -118,7 +118,7 @@ class TestTodoRemove:
         todo_item = _make_todo_item("grading", "Homework 1", "SP26: CS-149 Sec 01 - Operating Systems", needs_grading_count=5)
         canvas.get_todo_items.return_value = [todo_item]
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         with runner.isolated_filesystem():
             with open("remove.txt", "w") as f:
                 f.write("SP26:CS-149\tgrading\tHomework 1\n")
@@ -137,7 +137,7 @@ class TestTodoRemove:
         todo_item = _make_todo_item("grading", "Homework 1", "SP26: CS-149 Sec 01 - Operating Systems", needs_grading_count=5)
         canvas.get_todo_items.return_value = [todo_item]
 
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         with runner.isolated_filesystem():
             with open("remove.txt", "w") as f:
                 f.write("CS999:Fake\tgrading\tNonexistent\n")
