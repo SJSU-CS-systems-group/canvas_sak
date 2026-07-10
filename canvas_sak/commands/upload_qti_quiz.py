@@ -18,7 +18,7 @@ def upload_qti_quiz(course_name, qti_file, wait, poll_interval):
     QTI_FILE should be a zip file containing a QTI-formatted quiz.
     """
     canvas = get_canvas_object()
-    course = get_course(canvas, course_name)
+    course = get_course(canvas, course_name, is_active=False)
     output(f"uploading QTI quiz to {course.name}")
 
     # Create content migration for QTI import
