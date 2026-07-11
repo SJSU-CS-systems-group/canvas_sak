@@ -18,6 +18,7 @@ __all__ = [
     "min_grade_analyzer",
     "set_course_image",
     "set_due_dates",
+    "settings_navigation",
     "set_fudge_points",
     "set_letter_grade",
     "update_assignment",
