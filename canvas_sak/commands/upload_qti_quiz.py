@@ -8,17 +8,18 @@ from canvas_sak.core import *
 @canvas_sak.command()
 @click.argument('course_name', metavar='course')
 @click.argument('qti_file', type=click.Path(exists=True))
+@click.option('--active/--inactive', default=True, help="Search active or inactive courses")
 @click.option('--wait/--no-wait', default=True, show_default=True,
               help="wait for the import to complete")
 @click.option('--poll-interval', default=2, show_default=True,
               help="seconds between status checks when waiting")
-def upload_qti_quiz(course_name, qti_file, wait, poll_interval):
+def upload_qti_quiz(course_name, qti_file, active, wait, poll_interval):
     """Upload a QTI quiz package to a Canvas course.
 
     QTI_FILE should be a zip file containing a QTI-formatted quiz.
     """
     canvas = get_canvas_object()
-    course = get_course(canvas, course_name)
+    course = get_course(canvas, course_name, is_active=active)
     output(f"uploading QTI quiz to {course.name}")
 
     # Create content migration for QTI import
