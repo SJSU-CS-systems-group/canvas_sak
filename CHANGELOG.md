@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 - 2026-07-10
+
+- add `settings-navigation` command with `list` and `update` subcommands to
+  view and manage a course's navigation menu; `update` makes the given items
+  visible (passed as arguments and/or piped on stdin) and hides the rest
+- add `--active/--inactive` flag to `upload-qti-quiz` (defaults to active) so
+  courses whose term has not started can be targeted with `--inactive`
+
 ## 1.0.30 - 2026-07-07
 
 - relax all remaining exact dependency pins to `>=` floors so future python
