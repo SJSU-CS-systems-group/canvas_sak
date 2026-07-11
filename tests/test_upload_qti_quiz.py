@@ -7,13 +7,7 @@ from click.testing import CliRunner
 from canvas_sak.commands.upload_qti_quiz import upload_qti_quiz
 
 
-def test_upload_qti_quiz_finds_future_courses(tmp_path):
-    """upload-qti-quiz must look up courses with is_active=False so quizzes
-    can be uploaded to courses whose term has not started yet (the normal
-    case when setting up next semester)."""
-    qti_file = tmp_path / "quiz.zip"
-    qti_file.write_bytes(b"fake zip")
-
+def invoke_and_record_is_active(qti_file, extra_args=()):
     recorded = {}
 
     def fake_get_course(canvas, name, is_active=True):
@@ -22,6 +16,23 @@ def test_upload_qti_quiz_finds_future_courses(tmp_path):
 
     with patch("canvas_sak.commands.upload_qti_quiz.get_canvas_object", MagicMock()), \
          patch("canvas_sak.commands.upload_qti_quiz.get_course", fake_get_course):
-        CliRunner().invoke(upload_qti_quiz, ["My Course", str(qti_file)])
+        CliRunner().invoke(upload_qti_quiz, ["My Course", str(qti_file), *extra_args])
 
-    assert recorded["is_active"] is False
+    return recorded["is_active"]
+
+
+def test_upload_qti_quiz_defaults_to_active_courses(tmp_path):
+    """By default upload-qti-quiz only searches active courses."""
+    qti_file = tmp_path / "quiz.zip"
+    qti_file.write_bytes(b"fake zip")
+
+    assert invoke_and_record_is_active(qti_file) is True
+
+
+def test_upload_qti_quiz_inactive_flag_finds_future_courses(tmp_path):
+    """--inactive lets upload-qti-quiz find courses whose term has not
+    started yet (the normal case when setting up next semester)."""
+    qti_file = tmp_path / "quiz.zip"
+    qti_file.write_bytes(b"fake zip")
+
+    assert invoke_and_record_is_active(qti_file, ["--inactive"]) is False
