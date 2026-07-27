@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- fix `todo --remove` failing to import on python 3.10 and 3.11: two f-strings in
+  `todo.py` had a backslash inside the expression, which is only legal from 3.12
+  (pep 701). the whole package failed to import on those versions, so every
+  command was affected, not just `todo`
 - raise `requires-python` to `>=3.10` (was `>=3.7`): click 8.2+ requires 3.10 and
   the test suite already targets its `CliRunner` api, so the old floor advertised
   support that pip could not actually resolve

@@ -110,12 +110,15 @@ def todo(remove, dryrun, upcoming, recent_past):
             parts = format_todo_item(item)
             key = todo_key(parts[0], parts[1], parts[2])
             if key in remove_keys:
+                # joined out of the f-string: a backslash inside an f-string
+                # expression is a syntax error before python 3.12
+                joined = "\t".join(parts)
                 if dryrun:
-                    info(f"would remove: {'\t'.join(parts)}")
+                    info(f"would remove: {joined}")
                 else:
                     requests.delete(item.ignore_permanently,
                                     headers={"Authorization": f"Bearer {core.access_token}"})
-                    info(f"removed: {'\t'.join(parts)}")
+                    info(f"removed: {joined}")
                 removed += 1
         info(f"{removed} item(s) {'would be ' if dryrun else ''}removed")
         if dryrun and removed > 0:
