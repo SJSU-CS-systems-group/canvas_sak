@@ -1,0 +1,92 @@
+name: Bug report
+description: A canvas-sak command doesn't do what it says it does
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+
+        The most useful thing you can give us is **the exact command you ran and the
+        exact output you got**. With those we can usually diagnose immediately; without
+        them this turns into a long back-and-forth where we guess at what you're seeing.
+
+        ⚠️ **Please redact student data.** Names, email addresses, sids, and canvas user
+        ids are not useful to us and should not be posted in a public issue. Replace
+        them with `student1`, `1234`, and so on. Redact your api token too — if you have
+        already pasted one anywhere, revoke it in canvas → account → settings.
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: The command you ran
+      description: |
+        The full `canvas-sak ...` invocation. If the command modifies canvas, please
+        reproduce it with `--dryrun` (the default) if you can — that's safe to re-run
+        and usually shows the same bug.
+      placeholder: |
+        canvas-sak set-due-dates "CS 146" dates.txt --dryrun
+
+        If a data file is involved (due dates, assignment groups, an ignore list),
+        paste the smallest version of it that still shows the problem.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: What you expected vs. what happened
+      description: Paste the real output or traceback — not a paraphrase of it.
+      placeholder: |
+        Expected: ...
+        Actual:   ...
+
+        Output:
+        ```
+        ...
+        ```
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `canvas-sak --version`.
+      placeholder: "canvas-sak, version 1.1.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        OS, python version (`python --version`), and how you installed canvas-sak.
+      placeholder: |
+        OS:            macOS 15.2
+        Python:        3.12.4
+        Installed via: pip install canvas-sak
+    validations:
+      required: true
+
+  - type: input
+    id: canvas-host
+    attributes:
+      label: Canvas instance
+      description: |
+        Just the host, e.g. `sjsu.instructure.com`. Different institutions run different
+        canvas versions with different features enabled, and that is often the answer.
+      placeholder: "sjsu.instructure.com"
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Workarounds you found, when it started, related issues.
+    validations:
+      required: false

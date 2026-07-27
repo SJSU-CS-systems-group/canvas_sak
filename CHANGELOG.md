@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- raise `requires-python` to `>=3.10` (was `>=3.7`): click 8.2+ requires 3.10 and
+  the test suite already targets its `CliRunner` api, so the old floor advertised
+  support that pip could not actually resolve
+- add package metadata that was missing from every release so far: project urls
+  (source, changelog, issues), trove classifiers, keywords, and an spdx license
+  field, so the pypi page links back to the repository
+- add github actions ci: tests on python 3.10-3.14, plus a job that builds the
+  wheel and installs it into a clean interpreter — the check that would have
+  caught the 1.0.29 and 1.0.30 install failures before release
+- add `CONTRIBUTING.md` and `CONTRIBUTORS.md`
+- add `docs/`: a getting-started tutorial, how-to guides for due dates, assignment
+  groups, course reuse, quiz settings and ignore patterns, explanations of the
+  dry-run convention and of how courses are matched, and a command reference
+  generated from `--help` and checked in ci so it cannot drift
+- move the reference material that was in `README.md` into `docs/`, and rewrite the
+  readme as a pitch with a runnable example above the install instructions
+- add issue and pull request templates, including one asking people how they use
+  canvas-sak — five years with zero issues tells us nothing about who depends on it
+- add a dev container so contributors get a working environment in one click, built
+  and tested in ci so it cannot rot
 - fix `upload-course-content --pages --force` silently not updating existing
   pages: the canvas pages API ignores attributes not wrapped in `wiki_page`,
   so page edits now send `wiki_page=...`

@@ -1,88 +1,81 @@
-# canvas_sak - canvas Swiss-Army-Knife
-a command-line python based tool for teachers who use canvas. 
+# canvas-sak — the canvas swiss army knife
 
-you can download from Pypi.
-just `pip install canvas-sak`.
+[![CI](https://github.com/SJSU-CS-systems-group/canvas_sak/actions/workflows/ci.yml/badge.svg)](https://github.com/SJSU-CS-systems-group/canvas_sak/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/canvas-sak)](https://pypi.org/project/canvas-sak/)
+[![License](https://img.shields.io/github/license/SJSU-CS-systems-group/canvas_sak)](LICENSE)
 
-you will need to grab a "token" from your canvas account. go to the canvas webpage -> click on Account in the upper left -> click Settings -> scroll down and click the New Access Token button. you will need to put the token in a configuration file. `canvas-sak help-me-setup` will tell you how and where to create that configuration file.
-
-some of the major functions:
-
-* code-similarity: download program submissions and run them through stanford MOSS.
-* collect-reference-info: collect high level information about student for when they later ask for letters of recommendation.
-* download-submissions: the the submissions of an assignment.
-* download/upload-course-content: download and upload course content as markdown files for easily reusing past courses in a way that is easy to change.
-* message-students: send a canvas messages to students from the commandline
-* list/set-due-dates: list and set due dates for assignments all at once
-* update-quiz: view and update quiz settings (attempts, view responses, show correct answers, quiz type)
-
-# update-quiz
-
-View and update quiz settings for one or more quizzes in a course.
-
-## Options
-
-* `--active/--inactive`: search active (default) or inactive courses
-* `--all`: process all matching quizzes instead of requiring a single match
-* `--attempts INTEGER`: number of attempts allowed (-1 for unlimited)
-* `--view-responses [always|once|until_after_last_attempt|never]`: when students can view their responses
-* `--show-correct-answers/--hide-correct-answers`: whether to show correct answers after submission
-* `--quiz-type [practice_quiz|assignment|graded_survey|survey]`: the type of quiz
-
-## Examples
+**do the repetitive parts of teaching in canvas from your terminal — 32 commands for the
+things the web ui makes you click thirty times.** every command that changes your course
+shows you what it would do first, and stops.
 
 ```bash
-# List all quizzes in a course
-canvas-sak update-quiz "My Course" --inactive
-
-# View settings for a specific quiz
-canvas-sak update-quiz "My Course" "Midterm"
-
-# Set attempts to 2 for a quiz
-canvas-sak update-quiz "My Course" "Midterm" --attempts 2
-
-# Hide correct answers
-canvas-sak update-quiz "My Course" "Final" --hide-correct-answers
-
-# Update all quizzes containing "Quiz" in the title
-canvas-sak update-quiz "My Course" "Quiz" --all --attempts 2
-
-# Make a quiz a practice quiz with unlimited attempts
-canvas-sak update-quiz "My Course" "Practice" --quiz-type practice_quiz --attempts -1
+# reschedule an entire course for the new semester
+canvas-sak list-due-dates "CS 146" > dates.txt   # dump every date
+$EDITOR dates.txt                                # fix the year, shift a week
+canvas-sak set-due-dates "CS 146" dates.txt      # preview — nothing is written yet
+canvas-sak set-due-dates "CS 146" dates.txt --no-dryrun
 ```
 
-# Ignore files pattern
+also: pull a whole course down as markdown and push it into next semester's shell,
+run submissions through stanford moss, message every student, bulk-set letter grades,
+and collect the information you'll want when someone asks for a recommendation letter
+two years from now.
 
-* canvas_sak will search for ignore patterns from the canvas_sak configuration file in the [IGNORE] section.
-* if there is a `canvas-sak-ignore.lst` file in the current directory, it will use patterns in that file as well.
-* canvas_sak will avoid processing files that match the ignore patterns.
-* the patterns are the same format at gitignore patterns.
+▶️ **[see what every command does, without installing anything](docs/reference/commands.md)** —
+generated from the tool itself
 
-# Assignment Group files
+---
 
-    ASSIGNMENT_GROUP_NAME: WEIGHT_PERCENTAGE
-    ASSIGNMENT_NAME
-    ASSIGNMENT_NAME
+## install
 
-## Example Group File
+```bash
+pip install canvas-sak
+```
 
-    Assignments: 10%
-    Assignment1
-    Hard Assignment
-    Easy Assignment
-    LastAssignment
-    
-    Test1: 30%
-    Test1
-    
-    Test2: 30%
+or, to keep it out of your main python environment:
 
-    Test3: 30%
-    Test3
+```bash
+pipx install canvas-sak      # or: uv tool install canvas-sak
+```
 
-## Validations
+needs python 3.10+. then run `canvas-sak help-me-setup`, which walks you through
+creating a canvas access token and tells you exactly where to put it.
 
-- Make sure the the weights add up to 100%. Halt with an error if it does not
-- If the Assignment group does not exist, create the group
-- If the Assignment doesn't exist, print an error
-- Print what would happen, but don't actually do it if the --no-dryrun is not used
+## documentation
+
+- **[getting started](docs/tutorial/getting-started.md)** — install to first real command,
+  about ten minutes
+- **[how-to guides](docs/index.md#how-to-guides)** — due dates, assignment groups, reusing
+  a course, quiz settings, ignore patterns
+- **[explanation](docs/index.md#explanation)** — [why almost everything is a dry
+  run](docs/explanation/dry-run.md), and [how courses are
+  found](docs/explanation/finding-courses.md) (read this one when a course you're
+  definitely teaching "doesn't exist")
+- **[command reference](docs/reference/commands.md)** — all 32 commands and their options
+
+## contributing
+
+contributions are welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SJSU-CS-systems-group/canvas_sak)
+
+that gives you a working dev environment with nothing to install. the test suite mocks
+the canvas api, so you can develop without a canvas account or a token.
+
+documentation is the biggest gap right now and is a genuinely valuable place to start —
+see the [good first
+issues](https://github.com/SJSU-CS-systems-group/canvas_sak/labels/good%20first%20issue).
+
+## community
+
+- **[discussions](https://github.com/SJSU-CS-systems-group/canvas_sak/discussions)** —
+  questions, ideas, and show-and-tell
+- **[using this to run a real course?](https://github.com/SJSU-CS-systems-group/canvas_sak/issues/new?template=production_experience.yml)**
+  please tell us. the issue tracker only ever hears from people something broke for, so
+  without this we have no idea whether anyone is out there.
+- **[report a bug](https://github.com/SJSU-CS-systems-group/canvas_sak/issues/new/choose)**
+  — please redact student names and ids
+
+## license
+
+released into the public domain under the [Unlicense](LICENSE).

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel>=0.40"]
+requires = ["setuptools>=77", "wheel>=0.40"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,24 @@ name = "canvas-sak"
 version = "1.1.0"
 description = "Command‑line Swiss Army Knife for Canvas LMS"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
+license = "Unlicense"
+license-files = ["LICENSE"]
+authors = [{ name = "Benjamin Reed" }]
+keywords = ["canvas", "canvas-lms", "lms", "teaching", "grading", "education", "cli"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Education",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Education",
+    "Topic :: Utilities",
+]
 dependencies = [
 "arrow>=1.2.3",
 "beautifulsoup4>=4.12.2",
@@ -28,6 +45,12 @@ dependencies = [
 "soupsieve>=2.4.1",
 "urllib3>=1.26.16",
 ]
+
+[project.urls]
+Homepage = "https://sjsu-cs-systems-group.github.io/canvas_sak/"
+Source = "https://github.com/SJSU-CS-systems-group/canvas_sak"
+Changelog = "https://github.com/SJSU-CS-systems-group/canvas_sak/blob/main/CHANGELOG.md"
+Issues = "https://github.com/SJSU-CS-systems-group/canvas_sak/issues"
 
 [tool.setuptools.packages.find]
 include = ["canvas_sak*"]

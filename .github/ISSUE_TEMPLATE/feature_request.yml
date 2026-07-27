@@ -1,0 +1,69 @@
+name: Feature request
+description: Propose a specific, actionable addition or change
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For open-ended ideas, "would you consider…", or "how do other people handle
+        this?", please open a
+        **[Discussion](https://github.com/SJSU-CS-systems-group/canvas_sak/discussions)**
+        instead. Issues are for specific, actionable work.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: |
+        Describe the grading or course-management task, not the solution. This is the
+        most important field — a lot of requests turn out to be solvable with a command
+        that already exists, or with a smaller change than the one proposed.
+      placeholder: |
+        Every semester I have to ... and right now I do it by hand / by exporting a csv
+        and ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed command or option
+      description: What would you type? Sketch the invocation and the output you'd want.
+      placeholder: |
+        ```
+        canvas-sak some-command "My Course" --some-option
+        ```
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: modifies
+    attributes:
+      label: Would this modify anything in canvas?
+      description: |
+        Anything that writes to canvas has to default to a dry run — see CONTRIBUTING.md.
+      options:
+        - "No — read only"
+        - "Yes — it would write to canvas"
+        - "Not sure"
+      default: 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+      description: Workarounds, other tools, or the manual process this would replace.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd be willing to work on this (we'll help you get started)
+          required: false

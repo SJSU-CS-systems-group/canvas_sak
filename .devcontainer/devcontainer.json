@@ -1,0 +1,39 @@
+// A one-click dev environment for canvas-sak.
+//
+// Click "Open in Codespaces" (or, locally, VS Code -> Dev Containers: Reopen in
+// Container) and you get python, the package installed in editable mode, and pytest —
+// no setup prose to read. See CONTRIBUTING.md.
+//
+// Reference: https://containers.dev/implementors/json_reference/
+{
+  "name": "canvas-sak",
+
+  // 3.12 sits in the middle of the range CI tests (3.10-3.14). If you need to
+  // reproduce a version-specific failure, change the tag and rebuild.
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // Everything needed to run the suite. The tests mock the canvas api, so this
+  // container is fully usable without a canvas token or a real course.
+  "postCreateCommand": "pip install --upgrade pip && pip install -e . pytest",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python"
+      ],
+      "settings": {
+        // Deliberately off: this project has no formatter configured, so
+        // format-on-save would rewrite whole files and bury real changes in noise.
+        "editor.formatOnSave": false,
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}

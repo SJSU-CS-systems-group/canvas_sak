@@ -1,0 +1,58 @@
+name: Documentation issue
+description: Something in the docs is wrong, missing, or confusing
+title: "[Docs] "
+labels: ["documentation", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Documentation problems are real bugs and we treat them that way.
+
+        canvas-sak has 32 subcommands and not all of them are written up yet, so
+        "missing" is a very likely answer here — please still file it, because that
+        tells us which ones people actually reach for.
+
+        If you're new here, fixing one of these is an excellent first contribution.
+        Writing up the command you use is usually the fastest way to learn the codebase,
+        and we're happy to help you get started.
+
+  - type: input
+    id: location
+    attributes:
+      label: Where?
+      description: A url, or the path to the file. If it's missing entirely, say which command.
+      placeholder: "docs/how-to/set-due-dates.md, or: nothing documents `grade-discussion`"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - "Wrong — it says something untrue or out of date"
+        - "Missing — there's nothing about this at all"
+        - "Confusing — it's technically right but I couldn't follow it"
+        - "Example doesn't work"
+      default: 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: What happened?
+      description: |
+        If something was confusing, tell us what you expected it to say — that's usually
+        the most useful signal we get, and it's the hardest thing for us to see for
+        ourselves.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd be willing to submit a PR fixing this
+          required: false
