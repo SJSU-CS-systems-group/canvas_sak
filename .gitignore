@@ -1,8 +1,22 @@
 # Python Virtual Environment
 /venv/
+/.venv/
 
 # VSCode Configurations
 /.vscode/
 
+# JetBrains IDEs
+/.idea/
+
 # Pycache
-/__pycache__/
+# (no leading slash: these appear under canvas_sak/, canvas_sak/commands/, tests/ ...)
+__pycache__/
+
+# Build artifacts - never commit these
+/build/
+/dist/
+*.egg-info/
+
+# Test and tool caches
+/.pytest_cache/
+/.ruff_cache/
