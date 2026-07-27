@@ -268,7 +268,9 @@ def upload_pages(course, source, dryrun, force):
                 else:
                     info(f"updating {dict['title']} from {file}")
                     p: Page = course.get_page(rr4name[rrkey].url)
-                    rc = p.edit(**dict)
+                    # the canvas pages API silently ignores attributes that
+                    # are not wrapped in wiki_page
+                    rc = p.edit(wiki_page=dict)
             else:
                 if dryrun:
                     info(f"would create {dict['title']} from {file}")

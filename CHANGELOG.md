@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- fix `upload-course-content --pages --force` silently not updating existing
+  pages: the canvas pages API ignores attributes not wrapped in `wiki_page`,
+  so page edits now send `wiki_page=...`
 - add styling support to `upload-course-content` pages: a `template:` header
   names an html template file (relative to `--source`) whose `$body`
   placeholder receives the rendered markdown; other `$variables` in the
