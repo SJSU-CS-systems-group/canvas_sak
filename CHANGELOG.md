@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- add styling support to `upload-course-content` pages: a `template:` header
+  names an html template file (relative to `--source`) whose `$body`
+  placeholder receives the rendered markdown; other `$variables` in the
+  template become additional page header keys (empty if unset), so pages can
+  share a hand-styled wrapper while keeping plain markdown sources
+
 ## 1.1.0 - 2026-07-10
 
 - add `settings-navigation` command with `list` and `update` subcommands to

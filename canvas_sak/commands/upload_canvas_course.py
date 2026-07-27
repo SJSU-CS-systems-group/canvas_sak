@@ -1,3 +1,5 @@
+from string import Template
+
 from canvasapi.page import Page
 
 from canvas_sak.core import *
@@ -212,6 +214,40 @@ def upload_assignments(course, target, dryrun):
 PAGE_KEYWORDS = set(["title", "published", "publish_at", "front_page"])
 
 
+def template_identifiers(template_text):
+    """Return the set of $name / ${name} placeholders used in a template."""
+    return {m.group("named") or m.group("braced")
+            for m in Template.pattern.finditer(template_text)
+            if m.group("named") or m.group("braced")}
+
+
+def prepare_page(content, source):
+    """Parse a page file into the dict of canvas page attributes.
+
+    A template: header names an html file (relative to source, the parent of
+    the pages directory) whose $body placeholder receives the rendered
+    markdown. The template's other $variables become additional recognized
+    header keys for the page (they must appear after the template: line);
+    variables the page doesn't set substitute as empty strings. Without a
+    template the rendered markdown is the body, as before.
+    """
+    headers, body = parse_headers(content, PAGE_KEYWORDS | {"template"})
+    if "template" not in headers:
+        page = {k: v for k, v in headers.items() if k in PAGE_KEYWORDS}
+        page["body"] = md2htmlstr(body)
+        return page
+    with open(os.path.join(source, headers["template"]), "r") as fd:
+        template_text = fd.read()
+    idents = template_identifiers(template_text)
+    headers, body = parse_headers(content,
+                                  PAGE_KEYWORDS | {"template"} | (idents - {"body"}))
+    variables = {i: headers.get(i, "") for i in idents}
+    variables["body"] = md2htmlstr(body)
+    page = {k: v for k, v in headers.items() if k in PAGE_KEYWORDS}
+    page["body"] = Template(template_text).safe_substitute(variables)
+    return page
+
+
 def upload_pages(course, source, dryrun, force):
     # got to watch out for windows \\ when using join!
     all_files = list(walk_relative_files(source))
@@ -219,8 +255,7 @@ def upload_pages(course, source, dryrun, force):
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
-        dict, page = parse_headers(page, PAGE_KEYWORDS)
-        dict['body'] = md2htmlstr(page)
+        dict = prepare_page(page, os.path.dirname(source))
         rrkey = "Page" + dict['title']
         exists = rrkey in rr4name
         if exists:
