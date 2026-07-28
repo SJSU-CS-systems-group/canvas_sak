@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.0 - 2026-07-28
+
 - fix `todo --remove` failing to import on python 3.10 and 3.11: two f-strings in
   `todo.py` had a backslash inside the expression, which is only legal from 3.12
   (pep 701). the whole package failed to import on those versions, so every
