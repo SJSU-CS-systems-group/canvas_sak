@@ -1,18 +1,24 @@
 # how courses are found
 
-nearly every command takes a course as its first argument, and the rules for what that
-argument means catch people out. this page explains them, because the failure mode —
-"canvas-sak says i don't teach a course i am definitely teaching" — looks like a bug and
-isn't.
+nearly every command takes a course as its first argument. canvas course names are long
+— term, department, course number, and section all run together, like
+`FA26:CMPE-30 Section 01` — and typing that out every time, exactly right, to list your
+students would be miserable.
+
+so you don't have to. give canvas-sak **any fragment of the name that identifies one
+course**, and it works out which one you meant:
+
+```bash
+canvas-sak list-students "CMPE-30"      # matches FA26:CMPE-30 Section 01
+```
+
+the rest of this page is what "identifies one course" means in practice, and why a
+course you are definitely teaching sometimes appears not to exist.
 
 ## it's a partial match, and it must be unique
 
-the course argument is a **substring** of the course name, not the full name and not the
-course id:
-
-```bash
-canvas-sak list-students "146"        # matches "CS 146 Section 1 Fall 2026"
-```
+the argument is a **substring** of the course name — not the full name, and not the
+course id.
 
 canvas-sak then insists on exactly one match:
 
@@ -21,37 +27,39 @@ canvas-sak then insists on exactly one match:
 - **more than one match** → it prints the ones that matched and exits, so you can make
   the argument more specific. it will not pick one for you.
 
-if you teach two sections named similarly, include enough to disambiguate:
+when two of your courses share a fragment — two sections of the same class, typically —
+include enough to tell them apart:
 
 ```bash
-canvas-sak list-students "146 Section 1"
+canvas-sak list-students "CMPE-30 Section 01"
 ```
 
 matching is case-sensitive and matches anywhere in the name.
 
 ## only courses that are running *right now*
 
-this is the part that surprises people. by default canvas-sak only considers a course
-if, at this moment:
+a name fragment only searches the courses canvas-sak is currently looking at, and by
+default that is the courses running right now:
 
 ```
 start date <= now <= end date
 ```
 
-so a course is invisible to the default view when:
+teaching a course is mostly a present-tense activity, so that default keeps a decade of
+old sections out of every listing. but two of the most useful times to reach for this
+tool fall outside it:
 
 - **the term hasn't started yet** — you're setting up next semester in advance
 - **the term has ended** — you're pulling grades or reference info from a past course
 
-both are extremely common times to reach for this tool, which is why this comes up so
-often. the fix is `--inactive`:
+for those, ask for the inactive ones with `--inactive`:
 
 ```bash
 # next semester's course, before the term begins
-canvas-sak set-due-dates "CS 146 Spring" dates.txt --inactive
+canvas-sak set-due-dates "CMPE-30" dates.txt --inactive
 
 # last semester's course, after it ended
-canvas-sak collect-reference-info "CS 146 Fall 2025" --inactive
+canvas-sak collect-reference-info "CMPE-172" --inactive
 ```
 
 `--active` (the default) and `--inactive` are available on most commands — check

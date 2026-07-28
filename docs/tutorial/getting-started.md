@@ -104,8 +104,8 @@ started or has already ended:
 canvas-sak list-courses --inactive
 ```
 
-this trips up nearly everyone once — [how courses are
-found](../explanation/finding-courses.md) explains the rule.
+[how courses are found](../explanation/finding-courses.md) covers the full rule, and how
+to name a course without typing all of it.
 
 ## 5. run a read-only command
 
