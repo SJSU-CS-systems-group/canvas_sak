@@ -41,6 +41,12 @@ pipx install canvas-sak      # or: uv tool install canvas-sak
 needs python 3.10+. then run `canvas-sak help-me-setup`, which walks you through
 creating a canvas access token and tells you exactly where to put it.
 
+to upgrade later: `pip install --upgrade canvas-sak`.
+
+every version ships to [pypi](https://pypi.org/project/canvas-sak/) — that's the place
+to get it, not this repo's releases tab, which is historical. what changed in each
+version is in [CHANGELOG.md](CHANGELOG.md).
+
 ## documentation
 
 - **[getting started](docs/tutorial/getting-started.md)** — install to first real command,

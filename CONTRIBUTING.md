@@ -74,6 +74,29 @@ everything else under `docs/` is hand-written.
 **a new subcommand is a new file in `canvas_sak/commands/`.** follow an existing one
 — `todo.py` and `settings_navigation.py` are good models.
 
+### releases (maintainers)
+
+**canvas-sak ships on [pypi](https://pypi.org/project/canvas-sak/). github releases are
+not used** — the tags on this repo stop at v1.1 and the release pages there are
+historical only. `CHANGELOG.md` is the release notes of record, which is why prs are
+asked to add an entry saying *why* a change exists.
+
+to cut a release:
+
+```bash
+# 1. bump version in pyproject.toml
+# 2. move the CHANGELOG "## Unreleased" entries under the new version + date
+git commit -am "Release vX.Y.Z"
+rm -rf dist/ build/           # stale artifacts here will break the upload
+python -m build
+twine check dist/*
+twine upload dist/*
+# verify what you actually published, not what you built:
+python -m venv /tmp/v && /tmp/v/bin/pip install --no-cache-dir canvas-sak==X.Y.Z
+cd /tmp && /tmp/v/bin/canvas-sak --version
+git push
+```
+
 ## two conventions that are easy to miss
 
 **1. anything that modifies canvas must default to a dry run.**
