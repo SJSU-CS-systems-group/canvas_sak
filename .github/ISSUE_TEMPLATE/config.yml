@@ -1,0 +1,19 @@
+# Forces people through the templates instead of a blank textarea.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Question / help using canvas-sak
+    url: https://github.com/SJSU-CS-systems-group/canvas_sak/discussions/categories/q-a
+    about: "\"How do I ...?\" belongs here rather than in an issue — you'll usually get an answer faster."
+
+  - name: Idea or design discussion
+    url: https://github.com/SJSU-CS-systems-group/canvas_sak/discussions/categories/ideas
+    about: Open-ended proposals and "has anyone tried...", before they become concrete issues.
+
+  - name: Show and tell
+    url: https://github.com/SJSU-CS-systems-group/canvas_sak/discussions/categories/show-and-tell
+    about: Built a grading workflow around canvas-sak? We'd genuinely like to see it.
+
+  - name: Security vulnerability
+    url: https://github.com/SJSU-CS-systems-group/canvas_sak/security/advisories/new
+    about: This tool handles canvas api tokens and student data — please report privately, not in a public issue.

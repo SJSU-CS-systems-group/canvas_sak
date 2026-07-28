@@ -1,0 +1,81 @@
+name: Share how you use it
+description: Tell us how canvas-sak fits into your teaching — this genuinely helps
+title: "[Experience] "
+labels: ["experience"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **If you use canvas-sak to run a real course, please spend two minutes on this.**
+
+        The issue tracker only ever hears from people something broke for — they're the
+        only ones with a reason to write. If it just works for you, we never find out
+        you exist. In five years this project has received zero issues, which tells us
+        nothing at all about whether ten people or a thousand depend on it.
+
+        That makes it genuinely hard to know what to prioritise and, more importantly,
+        what we must not break. You don't have to fill in every field. One line helps.
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: What do you use it for?
+      description: |
+        Which commands do you actually reach for, and at what point in the semester?
+      placeholder: |
+        Mostly set-due-dates at the start of term and code-similarity before finals.
+        Two sections, ~120 students each.
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: What did it change for you?
+      description: Did it replace a manual process? Save an afternoon? Catch something?
+    validations:
+      required: false
+
+  - type: textarea
+    id: friction
+    attributes:
+      label: What's the most annoying part?
+      description: |
+        Be blunt. The boring complaints are the useful ones — install trouble, confusing
+        flags, output you have to squint at, a command you gave up on. We would much
+        rather hear it here than not at all.
+    validations:
+      required: false
+
+  - type: input
+    id: institution-type
+    attributes:
+      label: What kind of institution?
+      description: |
+        Only if you're comfortable saying. Canvas is configured very differently across
+        institutions, and knowing the spread helps us avoid assuming everyone's canvas
+        looks like ours.
+      placeholder: "large public university / community college / high school / ..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: public-mention
+    attributes:
+      label: May we mention your use publicly?
+      description: e.g. in release notes or a "who uses this" list.
+      options:
+        - "No — keep this between us"
+        - "Yes, but don't name my institution"
+        - "Yes, including my institution"
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version in use
+      placeholder: "1.1.0"
+    validations:
+      required: false
