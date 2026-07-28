@@ -77,9 +77,12 @@ everything else under `docs/` is hand-written.
 ### releases (maintainers)
 
 **canvas-sak ships on [pypi](https://pypi.org/project/canvas-sak/). github releases are
-not used** — the tags on this repo stop at v1.1 and the release pages there are
-historical only. `CHANGELOG.md` is the release notes of record, which is why prs are
-asked to add an entry saying *why* a change exists.
+not used** — there are none, and no build artifacts are published here. `CHANGELOG.md`
+is the release notes of record, which is why prs are asked to add an entry saying *why*
+a change exists.
+
+the `v0.1`–`v1.1` tags are still in the repo; they mark historical points and are not
+release artifacts.
 
 to cut a release:
 

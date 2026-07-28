@@ -43,8 +43,8 @@ creating a canvas access token and tells you exactly where to put it.
 
 to upgrade later: `pip install --upgrade canvas-sak`.
 
-every version ships to [pypi](https://pypi.org/project/canvas-sak/) — that's the place
-to get it, not this repo's releases tab, which is historical. what changed in each
+every version ships to [pypi](https://pypi.org/project/canvas-sak/) — that's the only
+place to get it, and this repo publishes no downloads of its own. what changed in each
 version is in [CHANGELOG.md](CHANGELOG.md).
 
 ## documentation
