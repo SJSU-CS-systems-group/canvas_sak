@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.3.0 - 2026-07-31
+
+- `upload-course-content --pages` now resolves images referenced with relative
+  paths in page markdown: the image file is looked up relative to the page's
+  `.md` file, uploaded to the course files (reused if it is already there), and
+  the img src is rewritten to the canvas file link. external and absolute srcs
+  are left alone
+- non-`.md` files in the `pages/` directory are no longer parsed as pages, which
+  also fixes a `UnicodeDecodeError` crash when an image sat next to a page
+
 ## 1.2.0 - 2026-07-28
 
 - fix `todo --remove` failing to import on python 3.10 and 3.11: two f-strings in
