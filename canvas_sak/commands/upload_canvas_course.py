@@ -248,11 +248,59 @@ def prepare_page(content, source):
     return page
 
 
+# the name canvas gives the root folder of a course's files; the resource
+# records built by map_course_resource_records key files under this prefix
+CANVAS_FILES_ROOT = "course files"
+
+IMG_SRC_RE = re.compile(r'(<img\b[^>]*?src=")([^"]+)(")')
+
+
+def resolve_page_images(course, body, source, page_file, dryrun):
+    """Rewrite <img> references to local image files into canvas file links.
+
+    Image srcs are relative to the page's file. An image that is not already
+    in the course files is uploaded to the folder matching its relative path.
+    srcs that are external, absolute, or don't point at a local file are left
+    alone.
+    """
+    def resolve(match):
+        src = match.group(2)
+        if "://" in src or src.startswith(("/", "data:")):
+            return match.group(0)
+        rel = os.path.normpath(os.path.join(os.path.dirname(page_file), src)).replace("\\", "/")
+        local = os.path.join(source, rel)
+        if not os.path.isfile(local):
+            warn(f"{page_file}: image {src} not found at {local}. leaving the link alone.")
+            return match.group(0)
+        rrkey = "File" + CANVAS_FILES_ROOT + "/" + rel
+        if rrkey in rr4name:
+            file_id = rr4name[rrkey].id
+        elif dryrun:
+            info(f"would upload image {rel} for {page_file}")
+            return match.group(0)
+        else:
+            info(f"uploading image {rel} for {page_file}")
+            success, response = course.upload(local, parent_folder_path=os.path.dirname(rel),
+                                              name=os.path.basename(rel))
+            # response can be a dict or a File object depending on canvasapi version
+            if isinstance(response, dict):
+                file_id, file_url = response["id"], response["url"]
+            else:
+                file_id, file_url = response.id, response.url
+            process_resource_record(ResourceRecord(file_id, base_url(file_url), "File",
+                                                   CANVAS_FILES_ROOT + "/" + rel, False))
+        return f'{match.group(1)}/courses/{course.id}/files/{file_id}/preview{match.group(3)}'
+
+    return IMG_SRC_RE.sub(resolve, body)
+
+
 def upload_pages(course, source, dryrun, force):
     # got to watch out for windows \\ when using join!
     all_files = list(walk_relative_files(source))
     to_upload = set(filter_ignored_paths(all_files))
     for file in to_upload:
+        if not file.endswith(".md"):
+            continue  # images and other assets are handled by the pages that reference them
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
         dict = prepare_page(page, os.path.dirname(source))
@@ -262,6 +310,7 @@ def upload_pages(course, source, dryrun, force):
             info(f"page {dict['title']} already exists")
         do_upload = not exists if not force else True
         if do_upload:
+            dict["body"] = resolve_page_images(course, dict["body"], source, file, dryrun)
             if exists:
                 if dryrun:
                     info(f"would update {dict['title']} from {file}")
