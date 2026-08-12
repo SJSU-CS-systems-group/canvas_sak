@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.4.0 - 2026-08-12
+
+- `list-students --sections` lists the sections each student is in, added as a
+  tab-separated column with comma-separated section names
+
 ## 1.3.0 - 2026-07-31
 
 - `upload-course-content --pages` now resolves images referenced with relative
