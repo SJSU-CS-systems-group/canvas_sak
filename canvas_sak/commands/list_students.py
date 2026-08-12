@@ -1,5 +1,25 @@
 from canvas_sak.core import *
 
+ENROLLMENT_TYPE_NAMES = {
+    'StudentEnrollment': 'Student',
+    'TaEnrollment': 'TA',
+    'TeacherEnrollment': 'Instructor',
+    'DesignerEnrollment': 'Designer',
+    'ObserverEnrollment': 'Observer',
+}
+
+def format_enrollments(enrollments):
+    '''return a comma separated list of enrollment roles for a user's enrollments'''
+    seen = []
+    for enrollment in enrollments or []:
+        enrollment_type = enrollment.get('type')
+        if enrollment_type is None:
+            continue
+        name = ENROLLMENT_TYPE_NAMES.get(enrollment_type, enrollment_type)
+        if name not in seen:
+            seen.append(name)
+    return ", ".join(seen)
+
 def format_sections(enrollments, section_names):
     '''return a comma separated list of section names for a user's enrollments'''
     seen = []
@@ -19,7 +39,8 @@ def format_sections(enrollments, section_names):
 @click.option('--id/--no-id', help="include the canvas id")
 @click.option('--link', help="show value of a link field (* for everything)", default=None)
 @click.option('--sections/--no-sections', help="list the sections the students are in")
-def list_students(course, active, emails, link, id, sections):
+@click.option('--enrollments/--no-enrollments', help="show how the student is enrolled in the class (Student/TA/Instructor/etc)")
+def list_students(course, active, emails, link, id, sections, enrollments):
     '''list the students in a course'''
     if link:
         link = link.lower()
@@ -40,5 +61,7 @@ def list_students(course, active, emails, link, id, sections):
                 additional_info += link_info
         if sections:
             additional_info += f"\t{format_sections(getattr(user, 'enrollments', None), section_names)}"
+        if enrollments:
+            additional_info += f"\t{format_enrollments(getattr(user, 'enrollments', None))}"
         output(f"{initial_info}{user.name}{additional_info}")
 

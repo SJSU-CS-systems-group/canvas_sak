@@ -1,6 +1,6 @@
 """Tests for list-students helpers."""
 
-from canvas_sak.commands.list_students import format_sections
+from canvas_sak.commands.list_students import format_enrollments, format_sections
 
 
 class TestFormatSections:
@@ -28,3 +28,33 @@ class TestFormatSections:
     def test_enrollment_without_section_id_skipped(self):
         enrollments = [{}, {"course_section_id": 1}]
         assert format_sections(enrollments, {1: "Section A"}) == "Section A"
+
+
+class TestFormatEnrollments:
+    def test_empty_enrollments_returns_empty_string(self):
+        assert format_enrollments([]) == ""
+        assert format_enrollments(None) == ""
+
+    def test_student_enrollment(self):
+        assert format_enrollments([{"type": "StudentEnrollment"}]) == "Student"
+
+    def test_ta_enrollment(self):
+        assert format_enrollments([{"type": "TaEnrollment"}]) == "TA"
+
+    def test_teacher_enrollment_shown_as_instructor(self):
+        assert format_enrollments([{"type": "TeacherEnrollment"}]) == "Instructor"
+
+    def test_multiple_enrollments_comma_separated(self):
+        enrollments = [{"type": "StudentEnrollment"}, {"type": "TaEnrollment"}]
+        assert format_enrollments(enrollments) == "Student, TA"
+
+    def test_duplicate_enrollments_listed_once(self):
+        enrollments = [{"type": "StudentEnrollment"}, {"type": "StudentEnrollment"}]
+        assert format_enrollments(enrollments) == "Student"
+
+    def test_unknown_enrollment_type_passed_through(self):
+        assert format_enrollments([{"type": "CustomEnrollment"}]) == "CustomEnrollment"
+
+    def test_enrollment_without_type_skipped(self):
+        enrollments = [{}, {"type": "ObserverEnrollment"}]
+        assert format_enrollments(enrollments) == "Observer"
