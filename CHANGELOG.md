@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.5.0 - 2026-08-12
+
+- `list-students --enrollments` shows how each student is enrolled in the class
+  (Student/TA/Instructor/etc), added as a tab-separated column with
+  comma-separated roles
+
 ## 1.4.0 - 2026-08-12
 
 - `list-students --sections` lists the sections each student is in, added as a
