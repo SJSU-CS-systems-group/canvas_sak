@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.6.0 - 2026-08-21
+
+- markdown to html conversion now supports fenced code blocks, tables, sane
+  lists (adjacent ordered/unordered lists stay separate), and GFM-style line
+  breaks (single newlines become `<br>`)
+
 ## 1.5.0 - 2026-08-12
 
 - `list-students --enrollments` shows how each student is enrolled in the class
