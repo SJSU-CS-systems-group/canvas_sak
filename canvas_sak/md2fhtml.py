@@ -16,7 +16,7 @@ def html2mdlist(html_list: list):
 
 def md2htmlstr(md_str: str):
     """Converts markdown in string form to html"""
-    html_str = markdown.markdown(md_str)
+    html_str = markdown.markdown(md_str, extensions=['fenced_code', 'tables', 'sane_lists', 'nl2br'])
     return html_str
 
 
