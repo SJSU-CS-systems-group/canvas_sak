@@ -1,4 +1,5 @@
 import re
+from canvasapi.util import combine_kwargs
 from canvas_sak.core import *
 
 
@@ -24,14 +25,113 @@ def find_rubrics_by_name(rubrics_list, name):
             if name_lower in getattr(r, 'title', '').lower()]
 
 
-def format_rubric_lines(title, points, assignment_names):
-    """Format a rubric and its assignments in the format parse_rubrics_file accepts."""
+def _fmt_pts(points):
+    """Render 10.0 as 10 but leave non-integral points alone."""
+    if isinstance(points, float) and points.is_integer():
+        return int(points)
+    return points
+
+
+def _one_line(text):
+    """Collapse a long description to a single line for the text format."""
+    return ' '.join(text.split())
+
+
+def format_rubric_definition(title, points, criteria):
+    """Format a rubric's criteria and ratings in the format
+    parse_rubric_definitions accepts:
+
+        Title (20 pts)
+        * Criterion (10 pts): optional long description
+          - Rating (10 pts): optional long description
+    """
     if points is None or points == 'N/A':
         lines = [f"{title} (N/A)"]
     else:
-        lines = [f"{title} ({points} pts)"]
-    lines.extend(f"  - {name}" for name in assignment_names)
+        lines = [f"{title} ({_fmt_pts(points)} pts)"]
+    for criterion in criteria:
+        line = f"* {criterion.get('description', '')} ({_fmt_pts(criterion.get('points', 0))} pts)"
+        if criterion.get('long_description'):
+            line += f": {_one_line(criterion['long_description'])}"
+        lines.append(line)
+        for rating in criterion.get('ratings') or []:
+            rating_line = f"  - {rating.get('description', '')} ({_fmt_pts(rating.get('points', 0))} pts)"
+            if rating.get('long_description'):
+                rating_line += f": {_one_line(rating['long_description'])}"
+            lines.append(rating_line)
     return lines
+
+
+# criterion/rating lines: name, then "(N pts)", then an optional long description
+CRITERION_RE = re.compile(r'^\*\s*(.+?)\s*\(([\d.]+)\s*pts?\)\s*(?::\s*(.*))?$')
+RATING_RE = re.compile(r'^-\s*(.+?)\s*\(([\d.]+)\s*pts?\)\s*(?::\s*(.*))?$')
+
+
+def is_rubric_definition_file(lines):
+    """A file with criterion lines ("* name (N pts)") holds rubric definitions,
+    as opposed to rubric-to-assignment associations."""
+    return any(CRITERION_RE.match(line.strip()) for line in lines)
+
+
+def parse_rubric_definitions(lines):
+    """Parse rubric definition lines into
+    [{title, criteria: [{description, points, long_description?, ratings: [...]}]}]"""
+    rubrics = []
+    current_rubric = None
+    current_criterion = None
+
+    for line in lines:
+        stripped = line.rstrip('\n\r').strip()
+        if not stripped:
+            continue
+
+        match = CRITERION_RE.match(stripped)
+        if match and current_rubric is not None:
+            current_criterion = {
+                'description': match.group(1),
+                'points': float(match.group(2)),
+                'ratings': [],
+            }
+            if match.group(3):
+                current_criterion['long_description'] = match.group(3)
+            current_rubric['criteria'].append(current_criterion)
+            continue
+
+        match = RATING_RE.match(stripped)
+        if match and current_criterion is not None:
+            rating = {'description': match.group(1), 'points': float(match.group(2))}
+            if match.group(3):
+                rating['long_description'] = match.group(3)
+            current_criterion['ratings'].append(rating)
+            continue
+
+        match = re.match(r'^(.+?)\s*\(\s*(?:[\d.]+\s*pts?|N/A)\s*\)\s*$', stripped, re.IGNORECASE)
+        if match and not stripped.startswith(('-', '*')):
+            current_rubric = {'title': match.group(1), 'criteria': []}
+            current_criterion = None
+            rubrics.append(current_rubric)
+
+    return rubrics
+
+
+def build_criteria_param(criteria):
+    """Convert parsed criteria into the indexed-hash form the Canvas API expects."""
+    return {
+        str(i): {
+            'description': criterion['description'],
+            'long_description': criterion.get('long_description', ''),
+            'points': criterion['points'],
+            'ratings': {
+                str(j): {
+                    'description': rating['description'],
+                    'long_description': rating.get('long_description', ''),
+                    'points': rating['points'],
+                }
+                for j, rating in enumerate(criterion.get('ratings', []))
+            },
+        }
+        for i, criterion in enumerate(criteria)
+    }
 
 
 def parse_rubrics_file(file):
@@ -105,17 +205,22 @@ def rubrics(course, rubric, active, update_file, dryrun):
 
     COURSE is a partial course name to match.
 
-    RUBRIC is an optional rubric name (partial match); if given, only that
-    rubric is displayed, in a format that can be saved to a file, edited,
-    and applied with --update-with.
+    RUBRIC is an optional rubric name (partial match); if given, that rubric's
+    criteria and ratings are displayed in a format that can be saved to a
+    file, edited, and applied with --update-with to update the rubric (or
+    create it in another course).
+
+    --update-with accepts two formats: rubric definitions (criteria lines
+    starting with "*") to create or update rubrics, or rubric-to-assignment
+    associations (the no-argument listing) to attach rubrics to assignments.
 
     Examples:
 
         canvas-sak rubrics "CS101"
 
-        canvas-sak rubrics "CS101" "Project Rubric" > rubrics.txt
+        canvas-sak rubrics "CS101" "Project Rubric" > rubric.txt
 
-        canvas-sak rubrics "CS101" --update-with rubrics.txt --no-dryrun
+        canvas-sak rubrics "CS101" --update-with rubric.txt --no-dryrun
     '''
 
     if rubric and update_file:
@@ -156,8 +261,39 @@ def rubrics(course, rubric, active, update_file, dryrun):
         return None, None
 
     if update_file:
-        # Update mode: apply rubric associations from file
-        parsed = parse_rubrics_file(update_file)
+        update_lines = update_file.read().splitlines()
+
+        if is_rubric_definition_file(update_lines):
+            # Definition mode: create or update rubric criteria/ratings
+            for spec in parse_rubric_definitions(update_lines):
+                title = spec['title']
+                existing = rubric_by_name.get(title)
+                total = _fmt_pts(sum(c['points'] for c in spec['criteria']))
+                action = 'update' if existing else 'create'
+                if dryrun:
+                    info(f"Would {action} rubric: {title} "
+                         f"({len(spec['criteria'])} criteria, {total} pts)")
+                    continue
+                rubric_body = {'title': title,
+                               'criteria': build_criteria_param(spec['criteria'])}
+                try:
+                    if existing:
+                        course._requester.request(
+                            'PUT', f'courses/{course.id}/rubrics/{existing.id}',
+                            _kwargs=combine_kwargs(rubric=rubric_body))
+                    else:
+                        course.create_rubric(rubric=rubric_body)
+                    info(f"{action.capitalize()}d rubric: {title} "
+                         f"({len(spec['criteria'])} criteria, {total} pts)")
+                except Exception as e:
+                    warn(f"Failed to {action} rubric {title}: {e}")
+
+            if dryrun:
+                dryrun_warn()
+            return
+
+        # Association mode: apply rubric-to-assignment associations from file
+        parsed = parse_rubrics_file(update_lines)
 
         if not parsed:
             error("No rubrics found in file")
@@ -201,7 +337,7 @@ def rubrics(course, rubric, active, update_file, dryrun):
         return
 
     if rubric:
-        # Single-rubric mode: display one rubric in --update-with format
+        # Single-rubric mode: display the rubric's definition in --update-with format
         matches = find_rubrics_by_name(rubrics_list, rubric)
         if not matches:
             error(f'Rubric "{rubric}" not found in course')
@@ -215,18 +351,12 @@ def rubrics(course, rubric, active, update_file, dryrun):
         title = getattr(matched, 'title', 'Untitled')
         points = getattr(matched, 'points_possible', 'N/A')
 
-        assignment_names = []
-        try:
-            detailed_rubric = course.get_rubric(matched.id, include=['assignment_associations'])
-            associations = getattr(detailed_rubric, 'associations', [])
-            for assoc in filter_assignment_associations(associations):
-                assoc_id = assoc.get('association_id')
-                assignment_names.append(
-                    assignment_by_id.get(assoc_id, f"Assignment ID {assoc_id}"))
-        except Exception as e:
-            warn(f"Could not fetch associations: {e}")
+        criteria = getattr(matched, 'data', None)
+        if criteria is None:
+            detailed_rubric = course.get_rubric(matched.id)
+            criteria = getattr(detailed_rubric, 'data', []) or []
 
-        for line in format_rubric_lines(title, points, assignment_names):
+        for line in format_rubric_definition(title, points, criteria):
             output(line)
         return
 

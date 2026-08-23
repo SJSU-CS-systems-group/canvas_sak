@@ -3,9 +3,12 @@
 from types import SimpleNamespace
 
 from canvas_sak.commands.rubrics import (
+    build_criteria_param,
     filter_assignment_associations,
     find_rubrics_by_name,
-    format_rubric_lines,
+    format_rubric_definition,
+    is_rubric_definition_file,
+    parse_rubric_definitions,
     parse_rubrics_file,
 )
 
@@ -64,24 +67,86 @@ class TestFindRubricsByName:
         assert find_rubrics_by_name(self.rubrics, 'quiz') == []
 
 
-class TestFormatRubricLines:
-    def test_round_trips_through_parse_rubrics_file(self):
+CRITERIA = [
+    {
+        'description': 'Correctness',
+        'long_description': 'how well it works',
+        'points': 10.0,
+        'ratings': [
+            {'description': 'Full marks', 'long_description': 'everything correct', 'points': 10.0},
+            {'description': 'Partial: some tests fail', 'points': 5.0},
+            {'description': 'No marks', 'points': 0.0},
+        ],
+    },
+    {
+        'description': 'Style',
+        'points': 10.0,
+        'ratings': [
+            {'description': 'Good', 'points': 10.0},
+            {'description': 'Poor', 'points': 0.0},
+        ],
+    },
+]
+
+
+class TestRubricDefinitionRoundTrip:
+    def test_display_output_parses_back_to_same_structure(self):
         """The displayed rubric must be usable as-is with --update-with."""
-        lines = format_rubric_lines('Project Rubric', 20, ['hw1', 'hw2'])
-        parsed = parse_rubrics_file(lines)
-        assert parsed == [('Project Rubric', ['hw1', 'hw2'])]
+        lines = format_rubric_definition('Project Rubric', 20.0, CRITERIA)
+        parsed = parse_rubric_definitions(lines)
+        assert len(parsed) == 1
+        rubric = parsed[0]
+        assert rubric['title'] == 'Project Rubric'
+        assert [c['description'] for c in rubric['criteria']] == ['Correctness', 'Style']
+        correctness = rubric['criteria'][0]
+        assert correctness['points'] == 10.0
+        assert correctness['long_description'] == 'how well it works'
+        assert [(r['description'], r['points']) for r in correctness['ratings']] == [
+            ('Full marks', 10.0),
+            ('Partial: some tests fail', 5.0),
+            ('No marks', 0.0),
+        ]
+        assert correctness['ratings'][0]['long_description'] == 'everything correct'
+        style = rubric['criteria'][1]
+        assert 'long_description' not in style
+        assert len(style['ratings']) == 2
 
-    def test_round_trips_with_float_points(self):
-        lines = format_rubric_lines('Project Rubric', 20.0, ['hw1'])
-        parsed = parse_rubrics_file(lines)
-        assert parsed == [('Project Rubric', ['hw1'])]
+    def test_multiple_rubrics_in_one_file(self):
+        lines = (format_rubric_definition('Rubric A', 10, CRITERIA[:1])
+                 + format_rubric_definition('Rubric B', 10, CRITERIA[1:]))
+        parsed = parse_rubric_definitions(lines)
+        assert [r['title'] for r in parsed] == ['Rubric A', 'Rubric B']
 
-    def test_round_trips_without_points(self):
-        lines = format_rubric_lines('Project Rubric', 'N/A', ['hw1'])
-        parsed = parse_rubrics_file(lines)
-        assert parsed == [('Project Rubric', ['hw1'])]
+    def test_rubric_without_points_round_trips(self):
+        lines = format_rubric_definition('Project Rubric', 'N/A', CRITERIA)
+        parsed = parse_rubric_definitions(lines)
+        assert parsed[0]['title'] == 'Project Rubric'
+        assert len(parsed[0]['criteria']) == 2
 
-    def test_rubric_with_no_assignments_still_parses(self):
-        lines = format_rubric_lines('Project Rubric', 20, [])
-        parsed = parse_rubrics_file(lines)
-        assert parsed == [('Project Rubric', [])]
+
+class TestIsRubricDefinitionFile:
+    def test_definition_file_is_detected(self):
+        lines = format_rubric_definition('Project Rubric', 20, CRITERIA)
+        assert is_rubric_definition_file(lines)
+
+    def test_association_file_is_not_a_definition_file(self):
+        lines = ['Project Rubric (20 pts)', '  - hw1', '  - hw2']
+        assert not is_rubric_definition_file(lines)
+        # and it still parses as an association file
+        assert parse_rubrics_file(lines) == [('Project Rubric', ['hw1', 'hw2'])]
+
+
+class TestBuildCriteriaParam:
+    def test_builds_indexed_hashes_for_canvas_api(self):
+        param = build_criteria_param(CRITERIA)
+        assert list(param.keys()) == ['0', '1']
+        assert param['0']['description'] == 'Correctness'
+        assert param['0']['long_description'] == 'how well it works'
+        assert param['0']['points'] == 10.0
+        assert list(param['0']['ratings'].keys()) == ['0', '1', '2']
+        assert param['0']['ratings']['1'] == {
+            'description': 'Partial: some tests fail',
+            'long_description': '',
+            'points': 5.0,
+        }
+        assert param['1']['long_description'] == ''
