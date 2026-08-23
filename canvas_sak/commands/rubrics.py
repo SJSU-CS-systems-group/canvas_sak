@@ -14,6 +14,26 @@ def filter_assignment_associations(associations):
             if assoc.get('association_type') == 'Assignment']
 
 
+def find_rubrics_by_name(rubrics_list, name):
+    """Find rubrics by title: exact match first, then case-insensitive partial."""
+    exact = [r for r in rubrics_list if getattr(r, 'title', '') == name]
+    if exact:
+        return exact
+    name_lower = name.lower()
+    return [r for r in rubrics_list
+            if name_lower in getattr(r, 'title', '').lower()]
+
+
+def format_rubric_lines(title, points, assignment_names):
+    """Format a rubric and its assignments in the format parse_rubrics_file accepts."""
+    if points is None or points == 'N/A':
+        lines = [f"{title} (N/A)"]
+    else:
+        lines = [f"{title} ({points} pts)"]
+    lines.extend(f"  - {name}" for name in assignment_names)
+    return lines
+
+
 def parse_rubrics_file(file):
     """Parse a rubrics file and return a list of (rubric_name, [assignment_name, ...])"""
     rubrics = []
@@ -75,21 +95,32 @@ def parse_rubrics_file(file):
 
 @canvas_sak.command()
 @click.argument("course")
+@click.argument("rubric", required=False)
 @click.option("--active/--inactive", default=True, help="match only active courses")
 @click.option("--update-with", "update_file", type=click.File('r'), default=None,
               help="File with rubric assignments to apply (same format as output)")
 @click.option("--dryrun/--no-dryrun", default=True, help="Only show what would be changed")
-def rubrics(course, active, update_file, dryrun):
+def rubrics(course, rubric, active, update_file, dryrun):
     '''List rubrics and their associated assignments for a course.
 
     COURSE is a partial course name to match.
+
+    RUBRIC is an optional rubric name (partial match); if given, only that
+    rubric is displayed, in a format that can be saved to a file, edited,
+    and applied with --update-with.
 
     Examples:
 
         canvas-sak rubrics "CS101"
 
+        canvas-sak rubrics "CS101" "Project Rubric" > rubrics.txt
+
         canvas-sak rubrics "CS101" --update-with rubrics.txt --no-dryrun
     '''
+
+    if rubric and update_file:
+        error("Specify either a rubric name or --update-with, not both")
+        sys.exit(2)
 
     canvas = get_canvas_object()
     course = get_course(canvas, course, is_active=active)
@@ -167,6 +198,36 @@ def rubrics(course, active, update_file, dryrun):
 
         if dryrun:
             dryrun_warn()
+        return
+
+    if rubric:
+        # Single-rubric mode: display one rubric in --update-with format
+        matches = find_rubrics_by_name(rubrics_list, rubric)
+        if not matches:
+            error(f'Rubric "{rubric}" not found in course')
+            sys.exit(2)
+        if len(matches) > 1:
+            error(f'Multiple rubrics match "{rubric}": '
+                  f'{[getattr(r, "title", "") for r in matches]}')
+            sys.exit(2)
+
+        matched = matches[0]
+        title = getattr(matched, 'title', 'Untitled')
+        points = getattr(matched, 'points_possible', 'N/A')
+
+        assignment_names = []
+        try:
+            detailed_rubric = course.get_rubric(matched.id, include=['assignment_associations'])
+            associations = getattr(detailed_rubric, 'associations', [])
+            for assoc in filter_assignment_associations(associations):
+                assoc_id = assoc.get('association_id')
+                assignment_names.append(
+                    assignment_by_id.get(assoc_id, f"Assignment ID {assoc_id}"))
+        except Exception as e:
+            warn(f"Could not fetch associations: {e}")
+
+        for line in format_rubric_lines(title, points, assignment_names):
+            output(line)
         return
 
     # List mode: show rubrics and associations
