@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.7.0 - 2026-08-25
+
+- `rubrics` accepts an optional rubric name and displays that rubric's
+  criteria and ratings in an editable text format
+- `rubrics COURSE RUBRIC --update-with file` updates the named rubric's
+  definition from the file, or creates the rubric if the course doesn't have
+  one by that name (which also copies a rubric between courses); without a
+  rubric name `--update-with` applies rubric-to-assignment associations as
+  before
+- new how-to guide: manage rubrics
+
 ## 1.6.0 - 2026-08-21
 
 - markdown to html conversion now supports fenced code blocks, tables, sane
