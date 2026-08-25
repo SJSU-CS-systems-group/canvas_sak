@@ -10,6 +10,7 @@ from canvas_sak.commands.rubrics import (
     is_rubric_definition_file,
     parse_rubric_definitions,
     parse_rubrics_file,
+    select_rubric_definitions,
 )
 
 
@@ -134,6 +135,33 @@ class TestIsRubricDefinitionFile:
         assert not is_rubric_definition_file(lines)
         # and it still parses as an association file
         assert parse_rubrics_file(lines) == [('Project Rubric', ['hw1', 'hw2'])]
+
+
+class TestSelectRubricDefinitions:
+    definitions = [
+        {'title': 'Project Rubric', 'criteria': []},
+        {'title': 'project rubric (old)', 'criteria': []},
+        {'title': 'Essay Rubric', 'criteria': []},
+    ]
+
+    def test_single_definition_is_used_regardless_of_name(self):
+        only = [{'title': 'Renamed Rubric', 'criteria': []}]
+        assert select_rubric_definitions(only, 'Project Rubric') == only
+
+    def test_exact_title_match_wins_over_partial(self):
+        result = select_rubric_definitions(self.definitions, 'Project Rubric')
+        assert [d['title'] for d in result] == ['Project Rubric']
+
+    def test_partial_match_is_case_insensitive(self):
+        result = select_rubric_definitions(self.definitions, 'essay')
+        assert [d['title'] for d in result] == ['Essay Rubric']
+
+    def test_ambiguous_partial_match_returns_all(self):
+        result = select_rubric_definitions(self.definitions, 'project')
+        assert [d['title'] for d in result] == ['Project Rubric', 'project rubric (old)']
+
+    def test_no_match_returns_empty_list(self):
+        assert select_rubric_definitions(self.definitions, 'quiz') == []
 
 
 class TestBuildCriteriaParam:

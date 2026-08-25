@@ -114,6 +114,19 @@ def parse_rubric_definitions(lines):
     return rubrics
 
 
+def select_rubric_definitions(definitions, name):
+    """Pick the parsed definition(s) matching name: a lone definition matches
+    unconditionally, otherwise exact title match first, then case-insensitive
+    partial."""
+    if len(definitions) == 1:
+        return definitions
+    exact = [d for d in definitions if d['title'] == name]
+    if exact:
+        return exact
+    name_lower = name.lower()
+    return [d for d in definitions if name_lower in d['title'].lower()]
+
+
 def build_criteria_param(criteria):
     """Convert parsed criteria into the indexed-hash form the Canvas API expects."""
     return {
@@ -210,9 +223,10 @@ def rubrics(course, rubric, active, update_file, dryrun):
     file, edited, and applied with --update-with to update the rubric (or
     create it in another course).
 
-    --update-with accepts two formats: rubric definitions (criteria lines
-    starting with "*") to create or update rubrics, or rubric-to-assignment
-    associations (the no-argument listing) to attach rubrics to assignments.
+    Without RUBRIC, --update-with applies rubric-to-assignment associations
+    (the no-argument listing format). With RUBRIC, --update-with instead
+    applies a rubric definition (the single-rubric format) to update or
+    create that rubric.
 
     Examples:
 
@@ -220,12 +234,8 @@ def rubrics(course, rubric, active, update_file, dryrun):
 
         canvas-sak rubrics "CS101" "Project Rubric" > rubric.txt
 
-        canvas-sak rubrics "CS101" --update-with rubric.txt --no-dryrun
+        canvas-sak rubrics "CS101" "Project Rubric" --update-with rubric.txt --no-dryrun
     '''
-
-    if rubric and update_file:
-        error("Specify either a rubric name or --update-with, not both")
-        sys.exit(2)
 
     canvas = get_canvas_object()
     course = get_course(canvas, course, is_active=active)
@@ -263,36 +273,62 @@ def rubrics(course, rubric, active, update_file, dryrun):
     if update_file:
         update_lines = update_file.read().splitlines()
 
-        if is_rubric_definition_file(update_lines):
-            # Definition mode: create or update rubric criteria/ratings
-            for spec in parse_rubric_definitions(update_lines):
-                title = spec['title']
-                existing = rubric_by_name.get(title)
-                total = _fmt_pts(sum(c['points'] for c in spec['criteria']))
-                action = 'update' if existing else 'create'
-                if dryrun:
-                    info(f"Would {action} rubric: {title} "
-                         f"({len(spec['criteria'])} criteria, {total} pts)")
-                    continue
-                rubric_body = {'title': title,
-                               'criteria': build_criteria_param(spec['criteria'])}
-                try:
-                    if existing:
-                        course._requester.request(
-                            'PUT', f'courses/{course.id}/rubrics/{existing.id}',
-                            _kwargs=combine_kwargs(rubric=rubric_body))
-                    else:
-                        course.create_rubric(rubric=rubric_body)
-                    info(f"{action.capitalize()}d rubric: {title} "
-                         f"({len(spec['criteria'])} criteria, {total} pts)")
-                except Exception as e:
-                    warn(f"Failed to {action} rubric {title}: {e}")
+        if rubric:
+            # Definition mode: update or create the named rubric from the file
+            definitions = [d for d in parse_rubric_definitions(update_lines)
+                           if d['criteria']]
+            if not definitions:
+                error("No rubric definition (criteria lines starting with '*') found in file")
+                sys.exit(2)
 
+            selected = select_rubric_definitions(definitions, rubric)
+            if not selected:
+                error(f'No rubric definition matching "{rubric}" in file: '
+                      f'{[d["title"] for d in definitions]}')
+                sys.exit(2)
+            if len(selected) > 1:
+                error(f'Multiple rubric definitions match "{rubric}": '
+                      f'{[d["title"] for d in selected]}')
+                sys.exit(2)
+            spec = selected[0]
+            title = spec['title']
+
+            targets = find_rubrics_by_name(rubrics_list, rubric)
+            if len(targets) > 1:
+                error(f'Multiple rubrics match "{rubric}" in course: '
+                      f'{[getattr(r, "title", "") for r in targets]}')
+                sys.exit(2)
+            existing = targets[0] if targets else None
+
+            total = _fmt_pts(sum(c['points'] for c in spec['criteria']))
+            action = 'update' if existing else 'create'
             if dryrun:
+                info(f"Would {action} rubric: {title} "
+                     f"({len(spec['criteria'])} criteria, {total} pts)")
                 dryrun_warn()
+                return
+
+            rubric_body = {'title': title,
+                           'criteria': build_criteria_param(spec['criteria'])}
+            try:
+                if existing:
+                    course._requester.request(
+                        'PUT', f'courses/{course.id}/rubrics/{existing.id}',
+                        _kwargs=combine_kwargs(rubric=rubric_body))
+                else:
+                    course.create_rubric(rubric=rubric_body)
+                info(f"{action.capitalize()}d rubric: {title} "
+                     f"({len(spec['criteria'])} criteria, {total} pts)")
+            except Exception as e:
+                warn(f"Failed to {action} rubric {title}: {e}")
             return
 
         # Association mode: apply rubric-to-assignment associations from file
+        if is_rubric_definition_file(update_lines):
+            error("File contains a rubric definition; "
+                  "specify the rubric name to update a rubric's criteria")
+            sys.exit(2)
+
         parsed = parse_rubrics_file(update_lines)
 
         if not parsed:
