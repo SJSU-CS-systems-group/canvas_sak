@@ -361,11 +361,16 @@ Usage: python -m canvas_sak list-students [OPTIONS] COURSE
   list the students in a course
 
 Options:
-  --active / --inactive   show only active courses
-  --emails / --no-emails  list student emails
-  --id / --no-id          include the canvas id
-  --link TEXT             show value of a link field (* for everything)
-  --help                  Show this message and exit.
+  --active / --inactive           show only active courses
+  --emails / --no-emails          list student emails
+  --id / --no-id                  include the canvas id
+  --link TEXT                     show value of a link field (* for
+                                  everything)
+  --sections / --no-sections      list the sections the students are in
+  --enrollments / --no-enrollments
+                                  show how the student is enrolled in the
+                                  class (Student/TA/Instructor/etc)
+  --help                          Show this message and exit.
 ```
 
 ## message-students
@@ -423,17 +428,30 @@ Options:
 ## rubrics
 
 ```
-Usage: python -m canvas_sak rubrics [OPTIONS] COURSE
+Usage: python -m canvas_sak rubrics [OPTIONS] COURSE [RUBRIC]
 
   List rubrics and their associated assignments for a course.
 
   COURSE is a partial course name to match.
 
+  RUBRIC is an optional rubric name (partial match); if given, that rubric's
+  criteria and ratings are displayed in a format that can be saved to a file,
+  edited, and applied with --update-with to update the rubric (or create it in
+  another course).
+
+  Without RUBRIC, --update-with applies rubric-to-assignment associations (the
+  no-argument listing format). With RUBRIC, --update-with instead applies a
+  rubric definition (the single-rubric format) to update or create that
+  rubric.
+
   Examples:
 
       canvas-sak rubrics "CS101"
 
-      canvas-sak rubrics "CS101" --update-with rubrics.txt --no-dryrun
+      canvas-sak rubrics "CS101" "Project Rubric" > rubric.txt
+
+      canvas-sak rubrics "CS101" "Project Rubric" --update-with rubric.txt
+      --no-dryrun
 
 Options:
   --active / --inactive   match only active courses

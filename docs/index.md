@@ -24,6 +24,8 @@ task-oriented recipes for people who already know what they want.
 - [set due dates in bulk](how-to/set-due-dates.md) — the list → edit → set round trip,
   including per-section dates
 - [set up assignment groups and weights](how-to/assignment-groups.md)
+- [manage rubrics](how-to/rubrics.md) — view, edit, create, and attach rubrics, all
+  through one round-trip file format
 - [reuse a course from a previous semester](how-to/reuse-a-course.md)
 - [view and change quiz settings](how-to/update-quiz.md)
 - [exclude files from processing](how-to/ignore-files.md)
