@@ -1,3 +1,5 @@
+import re
+
 import markdownify
 import markdown
 
@@ -24,3 +26,14 @@ def md2htmllist(md_list: list):
     """Converts markdown as a list of strings to html"""
     md_str = '\n'.join(md_list)
     return md2htmlstr(md_str)
+
+
+_P_WRAP_RE = re.compile(r'\A<p>(.*)</p>\Z', re.S)
+
+
+def md2inlinehtmlstr(md_str: str):
+    """Converts a single line of markdown to html without the enclosing <p>
+    tag, for values substituted into an inline context (template variables)."""
+    html_str = md2htmlstr(md_str)
+    m = _P_WRAP_RE.match(html_str)
+    return m.group(1) if m else html_str

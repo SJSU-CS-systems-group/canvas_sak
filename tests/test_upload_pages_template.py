@@ -75,6 +75,32 @@ class TestPreparePage:
         assert 'kicker' not in page
         assert set(page) == {'title', 'body'}
 
+    def test_template_variables_render_inline_markdown(self, tmp_path):
+        """Variable values are rendered as inline markdown: links and emphasis
+        work without raw html, and no <p> wrapper is added."""
+        (tmp_path / "t.html").write_text('<p class="x">$intro</p>$body')
+        content = ("title: My Page\n"
+                   "template: t.html\n"
+                   "intro: Start with the [Introduction module](MODULE[Course Welcome]) — **now**.\n"
+                   "body text")
+        page = prepare_page(content, str(tmp_path))
+
+        assert ('<p class="x">Start with the '
+                '<a href="MODULE[Course Welcome]">Introduction module</a>'
+                ' — <strong>now</strong>.</p>') in page['body']
+
+    def test_template_variable_plain_text_unchanged(self, tmp_path):
+        """Plain prose values pass through untouched, including a lone *."""
+        (tmp_path / "t.html").write_text('<em>$tagline</em>$body')
+        content = ("title: My Page\n"
+                   "template: t.html\n"
+                   "tagline: Formatted input and output with printf, scanf, and FILE *.\n"
+                   "body text")
+        page = prepare_page(content, str(tmp_path))
+
+        assert ('<em>Formatted input and output with printf, scanf, and FILE *.</em>'
+                in page['body'])
+
     def test_literal_dollars_preserved(self, tmp_path):
         """$$ escapes a dollar sign; a lone $ that isn't a placeholder survives."""
         (tmp_path / "t.html").write_text('cost: $$5 or $ 5\n$body')
