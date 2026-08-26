@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- discussions: `upload-course-content --discussions` can create graded
+  discussions — new headers `points`, `assignment_group`, `available`, `due`,
+  `until` (due-dates file date format), `allow_rating`, and
+  `only_graders_can_rate`
+
 ## 1.8.0 - 2026-08-25
 
 - pages: `MODULE[Name]` macros in page bodies resolve to the course's module

@@ -4,6 +4,7 @@ from canvasapi.page import Page
 
 from canvas_sak.core import *
 from canvas_sak.core import filter_ignored_paths
+from canvas_sak.commands.set_due_dates import parse_date
 from canvas_sak.md2fhtml import md2htmlstr, md2inlinehtmlstr
 
 
@@ -152,7 +153,38 @@ def extract_options(options):
             [o.split('=', 1) for o in options.split(';')]}
 
 
-DISCUSSION_KEYWORDS = set(["title", "published", "publish_at"])
+DISCUSSION_KEYWORDS = set(["title", "published", "publish_at", "points", "assignment_group",
+                           "available", "due", "until", "allow_rating", "only_graders_can_rate"])
+
+
+def build_discussion_params(headers):
+    """Convert parsed discussion headers into canvas discussion topic params.
+
+    The graded headers (points, assignment_group, available, due, until) collect
+    into an assignment sub-dict, which makes the discussion a graded discussion.
+    Dates use the due-dates file format (YYYY-MM-DD-hh:mm, local time).
+
+    Returns (params, assignment_group_name); assignment_group is returned as a
+    name for the caller to resolve to an id in params['assignment'].
+    """
+    params = dict(headers)
+    for key in ("allow_rating", "only_graders_can_rate"):
+        if key in params:
+            params[key] = params[key].lower()
+    assignment = {}
+    if "points" in params:
+        assignment["points_possible"] = float(params.pop("points"))
+        assignment["grading_type"] = "points"
+    if "available" in params:
+        assignment["unlock_at"] = parse_date(params.pop("available"))
+    if "due" in params:
+        assignment["due_at"] = parse_date(params.pop("due"))
+    if "until" in params:
+        assignment["lock_at"] = parse_date(params.pop("until"))
+    group_name = params.pop("assignment_group", None)
+    if assignment or group_name is not None:
+        params["assignment"] = assignment
+    return params, group_name
 
 
 def parse_headers(content, keywords):
@@ -179,12 +211,21 @@ def parse_headers(content, keywords):
 def upload_discussions(course, source, dryrun, force):
     all_files = list(walk_relative_files(source))
     to_upload = set(filter_ignored_paths(all_files))
+    assignment_groups = None
     for file in to_upload:
         with open(os.path.join(source, file), "r") as fd:
             page = fd.read()
-        dict, page = parse_headers(page, DISCUSSION_KEYWORDS)
+        headers, page = parse_headers(page, DISCUSSION_KEYWORDS)
+        dict, group_name = build_discussion_params(headers)
         dict['message'] = md2htmlstr(page)
         dict['discussion_type'] = 'threaded'
+        if group_name is not None:
+            if assignment_groups is None:
+                assignment_groups = {g.name: g for g in course.get_assignment_groups()}
+            if group_name not in assignment_groups:
+                error(f"assignment group not found for {dict['title']}: {group_name}")
+                continue
+            dict['assignment']['assignment_group_id'] = assignment_groups[group_name].id
         rrkey = "Discussion" + dict['title']
         exists = rrkey in rr4name
         if exists:

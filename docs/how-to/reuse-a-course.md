@@ -65,6 +65,32 @@ recognised keys are `title`, `published`, `publish_at`, and `front_page`. parsin
 at the first line that isn't a recognised key, and that line onward is treated as
 content — so a document that happens to begin with `Note: something` won't lose it.
 
+## discussion headers
+
+discussion files work the same way: optional `key: value` header lines, then the
+discussion description in markdown. discussions are always created threaded.
+
+```markdown
+title: Discussion: Week 3: Compute
+points: 1
+assignment_group: Study Discussion
+available: 2026-08-24-13:00
+due: 2026-08-31-13:00
+until: 2026-08-31-13:00
+allow_rating: true
+only_graders_can_rate: true
+
+reply with your own study question about this week's topic.
+```
+
+`title`, `published`, and `publish_at` work as for pages. the graded headers —
+`points`, `assignment_group`, `available`, `due`, and `until` — make the discussion
+a graded discussion: `points` is the score it is graded out of, `assignment_group`
+names an assignment group that must already exist in the course, and the dates use
+the due-dates file format (`YYYY-MM-DD-hh:mm`, local time) with the same meanings
+as `set-due-dates`. `allow_rating` lets replies be liked, and
+`only_graders_can_rate` restricts liking to graders.
+
 ## sharing one style across pages
 
 markdown gives you a page canvas will render plainly. if you want a consistent visual
