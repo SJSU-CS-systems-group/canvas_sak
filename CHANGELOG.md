@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.8.0 - 2026-08-25
+
+- pages: `MODULE[Name]` macros in page bodies resolve to the course's module
+  by that name at upload (as a markdown link target or href value), so pages
+  can link modules without hardcoding course or module ids and stay portable
+  across courses; unknown module names warn and leave the macro alone
+- pages: template variable values are rendered as inline markdown, so header
+  values can use links and emphasis instead of raw html
+
 ## 1.7.0 - 2026-08-25
 
 - `rubrics` accepts an optional rubric name and displays that rubric's
