@@ -4,7 +4,7 @@ from canvasapi.page import Page
 
 from canvas_sak.core import *
 from canvas_sak.core import filter_ignored_paths
-from canvas_sak.md2fhtml import md2htmlstr
+from canvas_sak.md2fhtml import md2htmlstr, md2inlinehtmlstr
 
 
 def boolean_option(key, params):
@@ -241,7 +241,9 @@ def prepare_page(content, source):
     idents = template_identifiers(template_text)
     headers, body = parse_headers(content,
                                   PAGE_KEYWORDS | {"template"} | (idents - {"body"}))
-    variables = {i: headers.get(i, "") for i in idents}
+    # variable values are rendered as inline markdown, so links, emphasis,
+    # and the like don't have to be written as raw html in the headers
+    variables = {i: md2inlinehtmlstr(headers.get(i, "")) for i in idents}
     variables["body"] = md2htmlstr(body)
     page = {k: v for k, v in headers.items() if k in PAGE_KEYWORDS}
     page["body"] = Template(template_text).safe_substitute(variables)
@@ -294,6 +296,28 @@ def resolve_page_images(course, body, source, page_file, dryrun):
     return IMG_SRC_RE.sub(resolve, body)
 
 
+MODULE_MACRO_RE = re.compile(r'MODULE\[([^]]+)]')
+
+
+def resolve_module_links(course, body, page_file):
+    """Rewrite MODULE[Name] macros into links to the course module by that
+    name (e.g. href="MODULE[Course Welcome]"), so pages can link modules
+    without hardcoding course or module ids and stay portable across courses.
+    """
+    if not MODULE_MACRO_RE.search(body):
+        return body
+    modules = {m.name: m.id for m in course.get_modules()}
+
+    def resolve(match):
+        name = match.group(1)
+        if name not in modules:
+            warn(f"{page_file}: module {name} not found in course. leaving the macro alone.")
+            return match.group(0)
+        return f'/courses/{course.id}/modules/{modules[name]}'
+
+    return MODULE_MACRO_RE.sub(resolve, body)
+
+
 def upload_pages(course, source, dryrun, force):
     # got to watch out for windows \\ when using join!
     all_files = list(walk_relative_files(source))
@@ -311,6 +335,7 @@ def upload_pages(course, source, dryrun, force):
         do_upload = not exists if not force else True
         if do_upload:
             dict["body"] = resolve_page_images(course, dict["body"], source, file, dryrun)
+            dict["body"] = resolve_module_links(course, dict["body"], file)
             if exists:
                 if dryrun:
                     info(f"would update {dict['title']} from {file}")
