@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.9.0 - 2026-09-15
+
+- `derive-assignment-score`: parentheses in an assignment title now normalize
+  to `_` like spaces and math operators, so "Quiz for addem (in-lab)" can be
+  referenced as `Quiz_for_addem_in_lab`. Previously the parens survived
+  normalization into a name no formula could write, which also blocked the
+  exact-match tiebreak for a title that is a prefix of another one
 - discussions: `upload-course-content --discussions` can create graded
   discussions — new headers `points`, `assignment_group`, `available`, `due`,
   `until` (due-dates file date format), `allow_rating`, and
