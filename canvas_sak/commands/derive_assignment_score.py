@@ -24,13 +24,20 @@ def extract_variable_names(formula):
 
 
 def normalize_name(name):
-    """Normalize a name by replacing spaces and math operators with underscores.
+    """Normalize a name by replacing spaces, math operators and parens with underscores.
 
-    Consecutive operator/space characters are collapsed into a single underscore.
-    This allows formula variables like Quiz_1 to match assignment names like
-    "Quiz 1", "Quiz - 1", "Quiz-1", etc.
+    Consecutive operator/space/paren characters are collapsed into a single
+    underscore. This allows formula variables like Quiz_1 to match assignment
+    names like "Quiz 1", "Quiz - 1", "Quiz-1", etc.
+
+    Parens are normalized away because they cannot appear in a formula variable:
+    the variable extractor would split "Quiz_for_addem_(in_lab)" into two
+    identifiers and eval would read it as a function call. Dropping them lets
+    "Quiz for addem (in-lab)" be addressed exactly as Quiz_for_addem_in_lab,
+    which matters when a title is a prefix of another ("Quiz for addem_fast
+    (in-lab)"), where only an exact match can break the tie.
     """
-    return re.sub(r'[\s+\-*/]+', '_', name).strip('_')
+    return re.sub(r'[\s+\-*/()]+', '_', name).strip('_')
 
 
 def get_assignment_normalized(course, var_name):

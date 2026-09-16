@@ -8,6 +8,7 @@ from canvas_sak.commands.derive_assignment_score import (
     build_change_score_comment,
     check_duplicate_assignments,
     find_last_manual_score,
+    get_assignment_normalized,
     normalize_name,
     parse_change_score_comment,
 )
@@ -43,6 +44,61 @@ class TestNormalizeName:
 
     def test_mixed_operators_collapse(self):
         assert normalize_name("A - B + C") == "A_B_C"
+
+    def test_parens_become_underscores(self):
+        assert normalize_name("Quiz for addem (in-lab)") == "Quiz_for_addem_in_lab"
+
+    def test_leading_paren_stripped(self):
+        assert normalize_name("(bonus) Lab 3") == "bonus_Lab_3"
+
+    def test_paren_run_collapses_with_spaces(self):
+        assert normalize_name("Exam ( final )") == "Exam_final"
+
+
+class TestGetAssignmentNormalized:
+    """A parenthesized suffix must not block the exact-match tiebreak.
+
+    "Quiz for addem (in-lab)" is a prefix of two other quiz titles, so a
+    variable can only pick it out by matching the whole title exactly.
+    """
+
+    QUIZZES = [
+        "Quiz for addem (in-lab)",
+        "Quiz for addem_fast (in-lab)",
+        "Quiz for addem_fast_c (in-lab)",
+    ]
+
+    def _make_course(self, titles):
+        data = [
+            {"assignment_id": i, "title": t} for i, t in enumerate(titles, start=1)
+        ]
+        return SimpleNamespace(
+            get_course_level_assignment_data=lambda: data,
+            get_assignment=lambda id: SimpleNamespace(id=id, name=titles[id - 1]),
+        )
+
+    @pytest.mark.parametrize(
+        "var_name,expected",
+        [
+            ("Quiz_for_addem_in_lab", "Quiz for addem (in-lab)"),
+            ("Quiz_for_addem_fast_in_lab", "Quiz for addem_fast (in-lab)"),
+            ("Quiz_for_addem_fast_c_in_lab", "Quiz for addem_fast_c (in-lab)"),
+        ],
+    )
+    def test_parenthesized_suffix_resolves_exactly(self, var_name, expected):
+        course = self._make_course(self.QUIZZES)
+        assert get_assignment_normalized(course, var_name).name == expected
+
+    def test_substring_still_matches_when_unique(self):
+        course = self._make_course(self.QUIZZES)
+        got = get_assignment_normalized(course, "addem_fast_c")
+        assert got.name == "Quiz for addem_fast_c (in-lab)"
+
+    def test_genuinely_ambiguous_still_exits(self):
+        course = self._make_course(self.QUIZZES)
+        with pytest.raises(SystemExit) as e:
+            get_assignment_normalized(course, "Quiz_for_addem")
+        assert e.value.code == 2
 
 
 class TestCheckDuplicateAssignments:
