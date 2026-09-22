@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.10.0 - 2026-09-22
 
 - markdown rendering: `--` and `---` in prose become en and em dashes
   (python-markdown's `smarty` extension with only `smart_dashes` on); quotes
