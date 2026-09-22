@@ -18,7 +18,17 @@ def html2mdlist(html_list: list):
 
 def md2htmlstr(md_str: str):
     """Converts markdown in string form to html"""
-    html_str = markdown.markdown(md_str, extensions=['fenced_code', 'tables', 'sane_lists', 'nl2br'])
+    html_str = markdown.markdown(
+        md_str,
+        extensions=['fenced_code', 'tables', 'sane_lists', 'nl2br', 'smarty'],
+        # only dashes: -- becomes an en dash and --- an em dash. quotes and
+        # ellipses stay ascii so commands and values quoted in prose survive
+        extension_configs={'smarty': {
+            'smart_quotes': False,
+            'smart_angled_quotes': False,
+            'smart_ellipses': False,
+        }},
+    )
     return html_str
 
 

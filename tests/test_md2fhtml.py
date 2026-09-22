@@ -46,3 +46,25 @@ def test_md2htmllist_table():
     html = md2htmllist(md_lines)
     assert '<table>' in html
     assert '<td>1</td>' in html
+
+
+def test_smart_dashes_in_prose():
+    html = md2htmlstr('a --- b and c -- d')
+    assert '&mdash;' in html
+    assert '&ndash;' in html
+    assert '---' not in html
+
+
+def test_smart_dashes_leave_code_alone():
+    html = md2htmlstr('run `a --- b`\n\n```\nx --- y\n```')
+    assert '&mdash;' not in html
+    assert html.count('---') == 2
+
+
+def test_smarty_does_not_educate_quotes_or_ellipses():
+    html = md2htmlstr('it\'s "quoted" ... done')
+    assert '&rsquo;' not in html
+    assert '&ldquo;' not in html
+    assert '&hellip;' not in html
+    assert '"quoted"' in html
+    assert '...' in html

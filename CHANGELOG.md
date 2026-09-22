@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- markdown rendering: `--` and `---` in prose become en and em dashes
+  (python-markdown's `smarty` extension with only `smart_dashes` on); quotes
+  and ellipses are left as typed, and code spans and blocks are untouched
+
 ## 1.9.0 - 2026-09-15
 
 - `derive-assignment-score`: parentheses in an assignment title now normalize
