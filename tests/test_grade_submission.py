@@ -707,7 +707,7 @@ class TestOnlyChanges:
 
 
 class TestGradeSubmissionAttachment:
-    """Test that --attachment uploads a file with the comment."""
+    """Test that --attachment uploads a file and posts it on the same comment."""
 
     @patch('canvas_sak.commands.grade_submission.get_canvas_object')
     @patch('canvas_sak.commands.grade_submission.get_course')
@@ -739,19 +739,23 @@ class TestGradeSubmissionAttachment:
         assert result.exit_code == 0
         submission.upload_comment.assert_not_called()
 
+    @patch('canvas_sak.commands.grade_submission.Uploader')
     @patch('canvas_sak.commands.grade_submission.get_canvas_object')
     @patch('canvas_sak.commands.grade_submission.get_course')
     @patch('canvas_sak.commands.grade_submission.get_assignment')
     def test_no_dryrun_uploads_attachment(self, mock_get_assignment,
-                                          mock_get_course, mock_get_canvas):
+                                          mock_get_course, mock_get_canvas,
+                                          mock_uploader):
         course = make_course()
         assignment = MagicMock()
         assignment.name = "Homework 1"
         assignment.points_possible = 100
         submission = make_submission()
+        submission.course_id = 7
+        submission.assignment_id = 101
         submission.edit.return_value = None
-        submission.upload_comment.return_value = None
         assignment.get_submission.return_value = submission
+        mock_uploader.return_value.start.return_value = (True, {'id': 777})
 
         mock_get_canvas.return_value = MagicMock()
         mock_get_course.return_value = course
@@ -770,8 +774,53 @@ class TestGradeSubmissionAttachment:
             ])
 
         assert result.exit_code == 0
+        # the file is uploaded first and its id rides along on the same edit
+        # that posts the grade and the message, so the student sees one comment
+        mock_uploader.assert_called_once()
+        assert mock_uploader.call_args.args[1] == \
+            "courses/7/assignments/101/submissions/42/comments/files"
+        assert mock_uploader.call_args.args[2] == 'feedback.pdf'
         submission.edit.assert_called_once_with(
             submission={'posted_grade': '95'},
-            comment={'text_comment': 'See attached'}
+            comment={'text_comment': 'See attached', 'file_ids': [777]}
         )
-        submission.upload_comment.assert_called_once()
+        submission.upload_comment.assert_not_called()
+
+    @patch('canvas_sak.commands.grade_submission.Uploader')
+    @patch('canvas_sak.commands.grade_submission.get_canvas_object')
+    @patch('canvas_sak.commands.grade_submission.get_course')
+    @patch('canvas_sak.commands.grade_submission.get_assignment')
+    def test_failed_upload_does_not_grade(self, mock_get_assignment,
+                                          mock_get_course, mock_get_canvas,
+                                          mock_uploader):
+        course = make_course()
+        assignment = MagicMock()
+        assignment.name = "Homework 1"
+        assignment.points_possible = 100
+        submission = make_submission()
+        submission.course_id = 7
+        submission.assignment_id = 101
+        assignment.get_submission.return_value = submission
+        mock_uploader.return_value.start.return_value = (False, {'message': 'nope'})
+
+        mock_get_canvas.return_value = MagicMock()
+        mock_get_course.return_value = course
+        mock_get_assignment.return_value = assignment
+
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open('feedback.pdf', 'w') as f:
+                f.write('fake pdf content')
+
+            result = runner.invoke(canvas_sak, [
+                'grade-submission', 'CS249', 'Homework',
+                '--canvasid', '42', '--grade', '95', '--message', 'See attached',
+                '--attachment', 'feedback.pdf',
+                '--no-dryrun'
+            ])
+
+        # a grade without its attachment would need a second pass to repair,
+        # so the whole update is skipped and the failure is reported
+        assert result.exit_code != 0
+        assert 'feedback.pdf' in result.output
+        submission.edit.assert_not_called()

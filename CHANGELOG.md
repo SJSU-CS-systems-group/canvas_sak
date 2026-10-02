@@ -1,5 +1,13 @@
 # Changelog
 
+## unreleased
+
+- `grade-submission --attachment`: the file is uploaded first and posted on
+  the same comment as the message, so the student sees one comment with the
+  file on it instead of the message followed by a second "Please see attached
+  files." comment. a failed upload now stops the command before the grade is
+  posted
+
 ## 1.10.0 - 2026-09-22
 
 - markdown rendering: `--` and `---` in prose become en and em dashes

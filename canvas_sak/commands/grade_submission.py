@@ -1,6 +1,27 @@
 from canvasapi.exceptions import ResourceDoesNotExist
+from canvasapi.upload import Uploader
 
 from canvas_sak.core import *
+
+
+def upload_comment_file(submission, path):
+    """upload a file for a submission comment and return its canvas file id.
+
+    canvasapi's Submission.upload_comment does the upload and then posts a
+    comment of its own, so the file lands in a separate "Please see attached
+    files." comment. uploading here and passing the id on the grading edit
+    keeps the message and the file on one comment.
+    """
+    ok, response = Uploader(
+        submission._requester,
+        "courses/{}/assignments/{}/submissions/{}/comments/files".format(
+            submission.course_id, submission.assignment_id, submission.user_id
+        ),
+        path,
+    ).start()
+    if not ok:
+        return None
+    return response['id']
 
 @canvas_sak.command()
 @click.argument('course_name', metavar='course')
@@ -23,7 +44,7 @@ def grade_submission(course_name, assignment_name, canvasid, sisid, grade, messa
     grade a student's submission for an assignment.
 
     assigns the specified grade and posts a submission comment. optionally
-    attaches a file to the comment.
+    attaches a file to that same comment.
 
     use --grade -1 to clear an existing grade.
 
@@ -114,14 +135,22 @@ def grade_submission(course_name, assignment_name, canvasid, sisid, grade, messa
         if attachment:
             info(f"  attachment: {attachment}")
     else:
-        submission.edit(submission={'posted_grade': posted_grade},
-                        comment={'text_comment': message})
+        comment = {'text_comment': message}
+        if attachment:
+            # upload before grading so a failed upload leaves nothing half done
+            file_id = upload_comment_file(submission, attachment)
+            if file_id is None:
+                error(f"failed to upload attachment {attachment}")
+                sys.exit(1)
+            comment['file_ids'] = [file_id]
+            info(f"uploaded attachment: {attachment}")
+
+        submission.edit(submission={'posted_grade': posted_grade}, comment=comment)
         if grade == '-1':
             info(f"unset grade for {assignment.name} for student {student_id}")
         else:
             info(f"graded {assignment.name} for student {student_id}: {grade}")
-        info(f"posted comment: {message}")
-
         if attachment:
-            submission.upload_comment(attachment)
-            info(f"uploaded attachment: {attachment}")
+            info(f"posted comment with {attachment} attached: {message}")
+        else:
+            info(f"posted comment: {message}")
